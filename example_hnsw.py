@@ -9,14 +9,25 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 hnsw_group7_path = os.path.join(current_dir, "hnsw-group7", "src")
 sys.path.insert(0, hnsw_group7_path)
 
+# Thêm import từ dataset.py
+sys.path.append(current_dir)  # Thêm thư mục hiện tại để import dataset
+from dataset import generate_dataset as generate_dataset_original, generate_queries
+
 try:
     from hnsw import HNSWIndex
 except ImportError as e:
     print(f"❌ Lỗi import HNSWIndex: {e}")
     sys.exit(1)
 
-INDEX_PATH = os.path.join(current_dir, "hnsw_index.bin")
-DATASET_PATH = os.path.join(current_dir, "dataset.npy")
+current_dir = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(current_dir, "my_data")
+
+# Tạo folder nếu chưa tồn tại
+os.makedirs(DATA_DIR, exist_ok=True)
+
+DATASET_PATH = os.path.join(DATA_DIR, "dataset.npy")
+INDEX_PATH = os.path.join(DATA_DIR, "hnsw_index.bin")
+
 DIM = 128
 NUM_VECTORS = 1_000_000
 CHUNK_SIZE = 100_000
@@ -26,21 +37,20 @@ def get_memory_usage():
     return process.memory_info().rss / (1024 ** 3)
 
 def generate_dataset():
-    """Sinh dữ liệu 1M vectors và lưu lại để tái sử dụng"""
+    """Sinh dữ liệu 1M vectors và lưu lại để tái sử dụng - SỬ DỤNG dataset.py"""
     if os.path.exists(DATASET_PATH):
         print(f"📦 Loading existing dataset from {DATASET_PATH}")
         return np.load(DATASET_PATH)
     
-    print("🔄 Generating new dataset (1M × 128)...")
-    np.random.seed(42)
-    dataset_chunks = []
-    for i in range(0, NUM_VECTORS, CHUNK_SIZE):
-        end_idx = min(i + CHUNK_SIZE, NUM_VECTORS)
-        chunk = np.random.randn(end_idx - i, DIM).astype(np.float32)
-        chunk /= np.linalg.norm(chunk, axis=1, keepdims=True)
-        dataset_chunks.append(chunk)
-        print(f"  ✅ Generated chunk {i//CHUNK_SIZE + 1}")
-    dataset = np.vstack(dataset_chunks)
+    print("🔄 Generating new dataset (1M × 128) using dataset.py...")
+    
+    # Sử dụng hàm từ dataset.py với seed cố định để tái tạo kết quả
+    dataset = generate_dataset_original(num_data=NUM_VECTORS, dim=DIM, seed=42)
+    
+    # Chuẩn hóa dữ liệu như cũ (giữ nguyên behavior)
+    dataset = dataset.astype(np.float32)
+    dataset /= np.linalg.norm(dataset, axis=1, keepdims=True)
+    
     np.save(DATASET_PATH, dataset)
     print(f"✅ Dataset saved to {DATASET_PATH}")
     return dataset
@@ -75,10 +85,14 @@ def load_hnsw_index():
     return hnsw
 
 def run_queries(hnsw, dataset, num_queries=1000, k=10):
-    """Chạy query test"""
+    """Chạy query test - SỬ DỤNG dataset.py"""
     print(f"\n🔍 Running {num_queries} queries (top-{k})...")
-    np.random.seed(123)
-    queries = np.random.randn(num_queries, DIM).astype(np.float32)
+    
+    # Sử dụng hàm generate_queries từ dataset.py
+    queries = generate_queries(num_queries=num_queries, dim=DIM, seed=123)
+    
+    # Chuẩn hóa queries như cũ
+    queries = queries.astype(np.float32)
     queries /= np.linalg.norm(queries, axis=1, keepdims=True)
 
     start = time.time()

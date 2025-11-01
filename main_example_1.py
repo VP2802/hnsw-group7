@@ -1,21 +1,12 @@
-import os, sys
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(BASE_DIR)
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
-HNSW_GROUP = os.path.join(BASE_DIR, "hnsw-group7")
-if os.path.isdir(HNSW_GROUP) and HNSW_GROUP not in sys.path:
-    sys.path.insert(0, HNSW_GROUP)
-
-from src.hnsw import HNSWIndex
-from dataset.dataset import generate_dataset, generate_queries
+from hnsw import HNSWIndex
+from dataset import generate_dataset, generate_queries
 import numpy as np
 
 def main():
     # 1️⃣ Cấu hình
     dim = 32
-    num_elements = 1000
-    num_queries = 3
+    num_elements = 100000
+    num_queries = 100
     k = 5
     seed = 42
 
