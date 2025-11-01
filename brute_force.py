@@ -2,14 +2,14 @@ import numpy as np
 import heapq
 from typing import List, Tuple, Union
 import time
-
+from dataset import generate_dataset, generate_queries, load_text_dataset
 class BruteForceSearch:
     """
     Brute-force linear search implementation for nearest neighbor search
     Serves as ground truth baseline for comparing with HNSW
     """
     
-    def __init__(self, metric: str = 'euclidean'):
+    def __init__(self, metric: str = 'euclidean'): #tạo placeholder cho dataset
         """
         Args:
             metric: Distance metric ('euclidean' or 'cosine')
@@ -17,52 +17,46 @@ class BruteForceSearch:
         self.metric = metric
         self.data = None
         self.dimension = None
-        self._data_norms = None  # Cache for cosine distance
-        self._data_sq = None     # Cache for euclidean distance
         
-    def fit(self, data: np.ndarray) -> None:
+    def fit(self, data: np.ndarray) -> None:#nạp dữ liệu
         """
         Store the dataset for brute-force search
         
         Args:
             data: numpy array of shape (n_samples, n_features)
         """
-        self.data = data.astype(np.float32)
+        self.data = data.astype(np.float32) #xài float32 thay vì float64 để tối ưu mem và speed nhưng vẫn đảm bảo precision
         self.dimension = data.shape[1]
-        
-        # Precompute for cosine distance
-        if self.metric == 'cosine':
-            self._data_norms = np.linalg.norm(self.data, axis=1)
-            # Avoid division by zero
-            self._data_norms[self._data_norms == 0] = 1e-10
-        
-        # Precompute for euclidean distance  
-        if self.metric == 'euclidean':
-            self._data_sq = np.sum(self.data ** 2, axis=1)
-            
         print(f"BruteForce: Loaded {len(data)} vectors of dimension {self.dimension}")
     
-    def euclidean_distance(self, a: np.ndarray, b: np.ndarray) -> float:
+    def euclidean_distance(self, a: np.ndarray, b: np.ndarray) -> float: #tính độ dài euclide
         """Calculate Euclidean distance between two vectors"""
         return np.sqrt(np.sum((a - b) ** 2))
     
-    def cosine_distance(self, a: np.ndarray, b: np.ndarray) -> float:
+    def cosine_distance(self, a: np.ndarray, b: np.ndarray) -> float: #tính độ dài cosine , giá trị thuộc đoạn [0,2]
         """Calculate cosine distance between two vectors"""
         dot_product = np.dot(a, b)
         norm_a = np.linalg.norm(a)
         norm_b = np.linalg.norm(b)
         return 1 - (dot_product / (norm_a * norm_b))
     
-    def _single_query_heap(self, query: np.ndarray, k: int = 1) -> Tuple[List[int], List[float]]:
+    def _single_query(self, query: np.ndarray, k: int = 1) -> Tuple[List[int], List[float]]: #sử dụng heap thay sort 
+        #Ứng dung: dataset nhỏ (k<100) sẽ tối ưu hơn, hoặc chỉ cần lấy top 10, top 50 với dataset lớn
         """
-        Optimized version using fixed-size max-heap 
-        Độ phức tạp: O(n*log(k)) thay vì O(n + k*log(n))
+        Perform brute-force search for a single query vector
+        
+        Args:
+            query: Query vector of shape (n_features,)
+            k: Number of nearest neighbors to return
+            
+        Returns:
+            Tuple of (indices, distances) for k nearest neighbors
         """
         if self.data is None:
             raise ValueError("Must call fit() before querying")
         
-        heap = []  # Max-heap: lưu (-distance, index)
-        
+        # Calculate distances to all points
+        distances = []
         for i, vector in enumerate(self.data):
             if self.metric == 'euclidean':
                 dist = self.euclidean_distance(query, vector)
@@ -70,324 +64,266 @@ class BruteForceSearch:
                 dist = self.cosine_distance(query, vector)
             else:
                 raise ValueError(f"Unsupported metric: {self.metric}")
-            
-            # Dùng negative distance để tạo max-heap
-            if len(heap) < k:
-                heapq.heappush(heap, (-dist, i))
-            else:
-                if dist < -heap[0][0]:
-                    heapq.heappushpop(heap, (-dist, i))
+            distances.append((dist, i))
         
-        # Extract and sort results
-        sorted_results = sorted([(-dist, idx) for dist, idx in heap])
-        indices = [idx for _, idx in sorted_results]
-        distances = [dist for dist, _ in sorted_results]
+        # Get k smallest distances
+        heapq.heapify(distances) #tạo heap : O(n)
+        k_smallest = heapq.nsmallest(k, distances) #lấy k phần tử nhỏ nhất: O(k*log(n))
+        # Tổng độ phức tạp: O(n + k*log(n))
+        #Tách indices và distances
+        indices = [idx for _, idx in k_smallest]
+        distances = [dist for dist, _ in k_smallest]
         
         return indices, distances
     
-    def _single_query_vectorized(self, query: np.ndarray, k: int = 1) -> Tuple[List[int], List[float]]:
+    def query(self, query: np.ndarray, k: int = 1) -> Tuple[List[int], List[float]]:
         """
-        Vectorized version - optimized for large datasets
-        """
-        if self.data is None:
-            raise ValueError("Must call fit() before querying")
-        
-        # Calculate distances - OPTIMIZED VERSION
-        if self.metric == 'euclidean':
-            # Optimized Euclidean: ||a-b||² = ||a||² + ||b||² - 2a·b
-            query_sq = np.dot(query, query)  # ||query||²
-            dot_products = np.dot(self.data, query)  # a·b
-            
-            # Tính squared distances
-            squared_distances = self._data_sq + query_sq - 2 * dot_products
-            
-            # Xử lý các giá trị âm do floating point errors
-            squared_distances = np.maximum(squared_distances, 0)
-            distances = np.sqrt(squared_distances)
-            
-        elif self.metric == 'cosine':
-            query_norm = np.linalg.norm(query)
-            if query_norm == 0:
-                query_norm = 1e-10
-            distances = 1 - np.dot(self.data, query) / (self._data_norms * query_norm)
-        else:
-            raise ValueError(f"Unsupported metric: {self.metric}")
-        
-        return self._get_top_k_optimized(distances, k)
-    
-    def _get_top_k_optimized(self, distances: np.ndarray, k: int) -> Tuple[List[int], List[float]]:
-        """
-        Optimized top-k selection with adaptive strategy
-        """
-        n = len(distances)
-        
-        if k == 1:
-            min_idx = np.argmin(distances)
-            return [min_idx], [distances[min_idx]]
-        elif k >= n:
-            sorted_indices = np.argsort(distances)
-        elif k < min(100, n // 4):  # Heuristic: k nhỏ
-            indices = np.argpartition(distances, k)[:k]
-            sorted_indices = indices[np.argsort(distances[indices])]
-        else:
-            sorted_indices = np.argsort(distances)[:k]
-        
-        return sorted_indices.tolist(), distances[sorted_indices].tolist()
-    
-    def query(self, query: np.ndarray, k: int = 1, method: str = 'auto') -> Tuple[List[int], List[float]]:
-        """
-        Query the brute-force index with method selection
+        Query the brute-force index
         
         Args:
             query: Query vector or batch of queries
             k: Number of nearest neighbors to return
-            method: 'heap', 'vectorized', or 'auto'
             
         Returns:
             For single query: (indices, distances)
             For batch queries: list of (indices, distances) tuples
         """
         if len(query.shape) == 1:
-            # Single query
-            if method == 'heap':
-                return self._single_query_heap(query, k)
-            elif method == 'vectorized':
-                return self._single_query_vectorized(query, k)
-            else:  # 'auto'
-                # Tự động chọn method tốt nhất
-                if k < 50 and len(self.data) > 1000:
-                    return self._single_query_heap(query, k)
-                else:
-                    return self._single_query_vectorized(query, k)
+            # Single query (1-dimension)
+            return self._single_query(query, k)
         else:
-            # Batch queries
+            # Batch queries (2+ dimensions)
             results = []
             for q in query:
-                results.append(self._single_query_vectorized(q, k))
+                results.append(self._single_query(q, k))
             return results
     
     def optimized_query(self, query: np.ndarray, k: int = 1) -> Tuple[List[int], List[float]]:
         """
-        Optimized version - compact form (giữ nguyên interface cũ)
+        Optimized version using vectorized operations
         """
-        return self._single_query_vectorized(query, k)
-    
-    def batch_query(self, queries: np.ndarray, k: int = 1, verbose: bool = False, 
-                   batch_size: int = 1000) -> List[Tuple[List[int], List[float]]]:
+        if self.data is None:
+            raise ValueError("Must call fit() before querying")
+        
+        if self.metric == 'euclidean':
+            # Vectorized Euclidean distance: sqrt(sum((A-B)^2))
+            differences = self.data - query #trừ toàn bộ ma trận
+            distances = np.sqrt(np.sum(differences ** 2, axis=1)) #tính toán toàn bộ
+        elif self.metric == 'cosine':
+            # Vectorized cosine distance: 1 - (A·B)/(||A||·||B||)
+            query_norm = np.linalg.norm(query)
+            data_norms = np.linalg.norm(self.data, axis=1)
+            dot_products = np.dot(self.data, query)
+            distances = 1 - (dot_products / (data_norms * query_norm))
+        else:
+            raise ValueError(f"Unsupported metric: {self.metric}")
+        
+        # Get k smallest distances
+        if k == 1:
+            min_idx = np.argmin(distances)
+            return [min_idx], [distances[min_idx]]
+        else:
+            indices = np.argpartition(distances, k)[:k] #phân vùng nhanh -> tìm k indices có giá trị nhỏ nhất (chưa sort)
+            # Sort the k smallest
+            sorted_indices = indices[np.argsort(distances[indices])] # chỉ sort k phần tử đã chọn => độ phức tạp: O(n+klogk) thay vì full sort: O(nlogn)
+            return sorted_indices.tolist(), distances[sorted_indices].tolist()
+
+    def batch_query(self, queries: np.ndarray, k: int = 1, verbose: bool = False) -> List[Tuple[List[int], List[float]]]:
         """
-        Perform batch queries with timing information và memory optimization
+        Perform batch queries with timing information
         
         Args:
             queries: Query vectors of shape (n_queries, n_features)
             k: Number of nearest neighbors to return
             verbose: Whether to print timing information
-            batch_size: Number of queries to process at once
             
         Returns:
             List of (indices, distances) tuples for each query
         """
-        start_time = time.time()
-        n_queries = len(queries)
-        results = []
+        start_time = time.time() #bắt đầu đếm thời gian để benchmark
         
-        for i in range(0, n_queries, batch_size):
-            end_idx = min(i + batch_size, n_queries)
-            batch_queries = queries[i:end_idx]
+        results = []
+        for i, query in enumerate(queries): #duyệt từng index và distance
+            indices, distances = self.optimized_query(query, k) 
+            results.append((indices, distances))
             
-            # Process batch
-            for j, query in enumerate(batch_queries):
-                indices, distances = self._single_query_vectorized(query, k)
-                results.append((indices, distances))
-                
-                if verbose and (i + j) % 1000 == 0:
-                    print(f"Processed {i + j}/{n_queries} queries")
+            if verbose and i % 1000 == 0: #hiển thị tiến độ mỗi 1000 queries
+                print(f"Processed {i}/{len(queries)} queries")
         
         end_time = time.time()
         
         if verbose:
-            total_time = end_time - start_time
-            qps = n_queries / total_time
-            print(f"BruteForce Batch Query: {n_queries} queries in {total_time:.4f}s "
+            total_time = end_time - start_time #tổng thời gian thực thi
+            qps = len(queries) / total_time # số queries per sec
+            print(f"BruteForce Batch Query: {len(queries)} queries in {total_time:.4f}s "
                   f"({qps:.2f} QPS), k={k}")
         
         return results
-    
-    def benchmark_queries(self, queries: np.ndarray, k_values: List[int] = [1, 10, 100], 
-                         num_queries: int = None) -> dict:
-        """
-        Benchmark performance với số lượng query tự cài đặt
-        
-        Args:
-            queries: Tất cả query vectors
-            k_values: Các giá trị k khác nhau để test
-            num_queries: Số query sử dụng (nếu None dùng tất cả)
-            
-        Returns:
-            Dictionary chứa kết quả benchmark
-        """
-        if num_queries is None:
-            num_queries = len(queries)
-        
-        test_queries = queries[:num_queries]
-        benchmark_results = {}
-        
-        print(f"=== BruteForce Benchmark: {num_queries} queries ===")
-        
-        for k in k_values:
-            start_time = time.time()
-            
-            # Thực hiện queries
-            results = self.batch_query(test_queries, k=k, verbose=False)
-            
-            end_time = time.time()
-            total_time = end_time - start_time
-            qps = num_queries / total_time
-            
-            benchmark_results[k] = {
-                'total_time': total_time,
-                'qps': qps,
-                'num_queries': num_queries,
-                'k': k
-            }
-            
-            print(f"k={k}: {total_time:.4f}s ({qps:.2f} QPS)")
-        
-        return benchmark_results
-    
-    def evaluate_accuracy(self, queries: np.ndarray, ground_truth: List[Tuple[List[int], List[float]]], 
-                         k: int = 10) -> dict:
-        """
-        Đánh giá độ chính xác so với ground truth
-        
-        Args:
-            queries: Query vectors
-            ground_truth: Kết quả ground truth (từ cùng method)
-            k: Number of neighbors to consider
-            
-        Returns:
-            Dictionary chứa các metrics đánh giá
-        """
-        results = self.batch_query(queries, k=k, verbose=False)
-        
-        total_recall = 0.0
-        total_precision = 0.0
-        
-        for i, (result_indices, truth_indices) in enumerate(zip(
-            [r[0] for r in results], 
-            [gt[0] for gt in ground_truth]
-        )):
-            result_set = set(result_indices)
-            truth_set = set(truth_indices[:k])
-            
-            # Tính recall và precision
-            intersection = len(result_set.intersection(truth_set))
-            recall = intersection / len(truth_set) if truth_set else 0.0
-            precision = intersection / len(result_set) if result_set else 0.0
-            
-            total_recall += recall
-            total_precision += precision
-        
-        avg_recall = total_recall / len(results)
-        avg_precision = total_precision / len(results)
-        
-        return {
-            'recall@k': avg_recall,
-            'precision@k': avg_precision,
-            'num_queries': len(queries),
-            'k': k
-        }
 
-
-# TEST CASE CHO 1M VECTORS
-def test_large_scale_1M():
+    
+def test_1M_vectors_top10():
     """
-    Test case với 1M vectors dimension 512, 100 queries, top 100
+    Test hiệu năng với 1 triệu vectors 512 chiều, tìm top 10 nearest neighbors
     """
     print("=" * 70)
-    print("LARGE SCALE TEST: 1M vectors, dim=512, 100 queries, top-100")
+    print("TEST 1M VECTORS - TOP 10 NEAREST NEIGHBORS")
     print("=" * 70)
     
-    from dataset import generate_dataset, generate_queries
-    
-    # Parameters
-    n_vectors = 1000000  # 1M vectors
-    dimension = 512      # High dimension
-    n_queries = 100     # 100 queries  
-    k = 100             # Top-100
-    seed = 42           # For reproducible results
-    
-    print(f"Generating {n_vectors:,} vectors of dimension {dimension}...")
+    # Tạo dataset 1 triệu vectors 512 chiều
+    print("🚀 Generating 1,000,000 vectors × 512 dimensions...")
     start_time = time.time()
     
-    # Generate dataset và queries
-    dataset = generate_dataset(num_data=n_vectors, dim=dimension, seed=seed)
-    queries = generate_queries(num_queries=n_queries, dim=dimension, seed=seed)
+    np.random.seed(42)
+    dataset = np.random.randn(1000000, 512).astype(np.float32)
     
-    gen_time = time.time() - start_time
-    print(f"✓ Dataset generated in {gen_time:.2f}s")
-    print(f"✓ Dataset shape: {dataset.shape}, size: {dataset.nbytes / (1024**3):.2f} GB")
-    print(f"✓ Queries shape: {queries.shape}")
+    # Normalize vectors (quan trọng cho cosine distance)
+    norms = np.linalg.norm(dataset, axis=1, keepdims=True)
+    dataset = dataset / norms
     
-    # Test Euclidean
-    print("\n--- Testing Euclidean Distance ---")
+    # Tạo query vectors
+    queries = np.random.randn(10, 512).astype(np.float32)
+    norms = np.linalg.norm(queries, axis=1, keepdims=True)
+    queries = queries / norms
+    
+    print(f"✅ Dataset: {dataset.shape}")
+    print(f"✅ Queries: {queries.shape}")
+    print(f"⏱️  Generation time: {time.time() - start_time:.2f}s")
+    
+    # Test với Euclidean distance
+    print("\n--- Euclidean Distance Test ---")
     bf_euclidean = BruteForceSearch(metric='euclidean')
-    
-    fit_start = time.time()
     bf_euclidean.fit(dataset)
-    fit_time = time.time() - fit_start
-    print(f"✓ Data fitted in {fit_time:.2f}s")
     
-    print("Running Euclidean queries...")
-    euclidean_start = time.time()
-    results_euclidean = bf_euclidean.batch_query(queries, k=k, verbose=True, batch_size=20)
-    euclidean_time = time.time() - euclidean_start
+    # Test single query
+    print(f"\n🎯 Testing single query (top 10)...")
+    query_start = time.time()
+    indices, distances = bf_euclidean.optimized_query(queries[0], k=10)
+    query_time = time.time() - query_start
     
-    # Test Cosine
-    print("\n--- Testing Cosine Distance ---")
+    print(f"⏱️  Query time: {query_time:.4f}s")
+    print(f"🚀 QPS: {1/query_time:.2f}")
+    print(f"📊 Top 10 results:")
+    for i, (idx, dist) in enumerate(zip(indices, distances)):
+        print(f"    {i+1:2d}. Index: {idx:7d}, Distance: {dist:.6f}")
+    
+    # Test với Cosine distance
+    print("\n--- Cosine Distance Test ---")
     bf_cosine = BruteForceSearch(metric='cosine')
-    
     bf_cosine.fit(dataset)
-    print("Running Cosine queries...")
+    
     cosine_start = time.time()
-    results_cosine = bf_cosine.batch_query(queries, k=k, verbose=True, batch_size=20)
+    cosine_indices, cosine_distances = bf_cosine.optimized_query(queries[0], k=10)
     cosine_time = time.time() - cosine_start
     
-    # Results comparison
-    print(f"\n" + "=" * 50)
-    print("PERFORMANCE COMPARISON")
-    print("=" * 50)
-    print(f"Euclidean - Total time: {euclidean_time:.2f}s, QPS: {n_queries/euclidean_time:.2f}")
-    print(f"Cosine    - Total time: {cosine_time:.2f}s, QPS: {n_queries/cosine_time:.2f}")
-    print(f"Ratio: Euclidean/Cosine = {euclidean_time/cosine_time:.2f}x")
+    print(f"⏱️  Query time: {cosine_time:.4f}s")
+    print(f"🚀 QPS: {1/cosine_time:.2f}")
+    print(f"📊 Top 10 results:")
+    for i, (idx, dist) in enumerate(zip(cosine_indices, cosine_distances)):
+        print(f"    {i+1:2d}. Index: {idx:7d}, Distance: {dist:.6f}")
     
-    # Verify results
-    if results_euclidean and results_cosine:
-        print(f"\nResults verification:")
-        print(f"Euclidean - First query: {len(results_euclidean[0][0])} neighbors")
-        print(f"Cosine    - First query: {len(results_cosine[0][0])} neighbors")
+    # So sánh kết quả Euclidean vs Cosine
+    print(f"\n--- Comparison ---")
+    common_indices = set(indices) & set(cosine_indices)
+    print(f"📈 Common indices in top 10: {len(common_indices)}")
+    print(f"📈 Euclidean top 1: {indices[0]}, Cosine top 1: {cosine_indices[0]}")
+    
+    # Benchmark với multiple queries
+    print(f"\n--- Batch Query Benchmark ---")
+    test_queries = queries[:5]  # Test với 5 queries
+    
+    # Euclidean batch
+    euclidean_start = time.time()
+    euclidean_results = bf_euclidean.batch_query(test_queries, k=10, verbose=False)
+    euclidean_batch_time = time.time() - euclidean_start
+    
+    # Cosine batch  
+    cosine_start = time.time()
+    cosine_results = bf_cosine.batch_query(test_queries, k=10, verbose=False)
+    cosine_batch_time = time.time() - cosine_start
+    
+    print(f"📊 5 queries batch performance:")
+    print(f"   Euclidean: {euclidean_batch_time:.2f}s ({5/euclidean_batch_time:.2f} QPS)")
+    print(f"   Cosine:    {cosine_batch_time:.2f}s ({5/cosine_batch_time:.2f} QPS)")
+    
+    # Performance estimates
+    print(f"\n--- Performance Estimates ---")
+    print(f"⏳ 100 queries: {query_time * 100:.1f}s ({query_time * 100/60:.1f} minutes)")
+    print(f"⏳ 1,000 queries: {query_time * 1000:.1f}s ({query_time * 1000/60:.1f} minutes)")
+    print(f"⏳ 10,000 queries: {query_time * 10000:.1f}s ({query_time * 10000/3600:.1f} hours)")
+    
+    # Memory info
+    dataset_memory = dataset.nbytes / (1024**3)
+    print(f"\n💾 Memory usage: {dataset_memory:.2f} GB")
+    
+    print("\n" + "=" * 70)
+    print("TEST 1M VECTORS COMPLETED!")
+    print("=" * 70)
+    
+    return query_time
+
+def test_1M_vectors_optimized():
+    """
+    Test nhanh với optimized query để so sánh hiệu năng
+    """
+    print("\n" + "=" * 70)
+    print("QUICK TEST: OPTIMIZED vs NORMAL QUERY")
+    print("=" * 70)
+    
+    
+    np.random.seed(42)
+    small_dataset = np.random.randn(1000000, 512).astype(np.float32)
+    norms = np.linalg.norm(small_dataset, axis=1, keepdims=True)
+    small_dataset = small_dataset / norms
+    
+    small_query = np.random.randn(512).astype(np.float32)
+    small_query = small_query / np.linalg.norm(small_query)
+    
+    print(f"Dataset: {small_dataset.shape}")
+    
+    bf = BruteForceSearch(metric='euclidean')
+    bf.fit(small_dataset)
+    
+    # Test normal query
+    print(f"\n🔍 Testing normal query...")
+    normal_start = time.time()
+    normal_indices, normal_distances = bf.query(small_query, k=10)
+    normal_time = time.time() - normal_start
+    
+    # Test optimized query
+    print(f"🔍 Testing optimized query...")
+    optimized_start = time.time()
+    optimized_indices, optimized_distances = bf.optimized_query(small_query, k=10)
+    optimized_time = time.time() - optimized_start
+    
+    print(f"\n📊 RESULTS COMPARISON:")
+    print(f"   Normal query:    {normal_time:.4f}s")
+    print(f"   Optimized query: {optimized_time:.4f}s")
+    print(f"   ⚡ Speedup: {normal_time/optimized_time:.2f}x")
+    
+    # Verify results match
+    if normal_indices == optimized_indices and np.allclose(normal_distances, optimized_distances):
+        print(f"   ✅ Results match perfectly!")
+    else:
+        print(f"   ⚠️  Results differ (expected with floating point)")
         
-        # Check if distances make sense
-        euclidean_dists = results_euclidean[0][1]
-        cosine_dists = results_cosine[0][1]
-        print(f"Euclidean distance range: [{euclidean_dists[0]:.4f} ... {euclidean_dists[-1]:.4f}]")
-        print(f"Cosine distance range: [{cosine_dists[0]:.4f} ... {cosine_dists[-1]:.4f}]")
-    
-    print("\n✅ Large scale test completed successfully!")
-    return results_euclidean, results_cosine
+    return optimized_time
 
 if __name__ == "__main__":
-    print("BruteForceSearch Optimized Version")
-    print("With improved Euclidean distance calculation")
+    print("BRUTE-FORCE TEST SUITE")
+    print("Choose test to run:")
+    print("1. Quick optimized vs normal test (1M vectors)")
+    print("2. Full 1M vectors test (top 10 neighbors)")
+    print("3. Both tests")
     
-    try:
-        results_euclidean, results_cosine = test_large_scale_1M()
-        print("\n🎉 Benchmark completed successfully!")
-        
-    except MemoryError:
-        print("\n💥 MEMORY ERROR: Not enough RAM for 1M vectors")
-        print("Try reducing n_vectors to 100000")
-        
-    except Exception as e:
-        print(f"\n❌ ERROR: {e}")
-        import traceback
-        traceback.print_exc()
+    choice = input("Enter choice (1/2/3): ").strip()
+    
+    if choice == "1":
+        test_1M_vectors_optimized()
+    elif choice == "2":
+        test_1M_vectors_top10()
+    elif choice == "3":
+        test_1M_vectors_optimized()
+        test_1M_vectors_top10()
+    else:
+        print("Running quick test...")
+        test_1M_vectors_optimized()
