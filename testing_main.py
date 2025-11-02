@@ -52,6 +52,13 @@ class SimpleHNSW:
         if not os.path.exists(self.index_path):
             print("❌ Index chưa tồn tại! Hãy build trước.")
             return None
+        
+        #Kiểm tra số vectors có hợp lệ không
+        dataset = np.load(self.dataset_path)
+        actual_vectors = len(dataset)
+        if num_vectors > actual_vectors:
+            print(f"❌ Lỗi: Yêu cầu {num_vectors:,} vectors nhưng index có sẵn chỉ có {actual_vectors:,} vectors!")
+        return None
             
         self.index = HNSWIndex(dim=self.dim, space='cosine')
         self.index.load_index(self.index_path, max_elements=num_vectors)
