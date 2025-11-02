@@ -71,6 +71,13 @@ class SimpleHNSW:
         if self.index is None:
             print("❌ Chưa load index!")
             return
+        
+        # Kiểm tra k không vượt quá số vectors
+        dataset = np.load(self.dataset_path)
+        if k > len(dataset):
+            print(f"❌ Lỗi: k={k} vượt quá số vectors trong index ({len(dataset)})!")
+            k = len(dataset)
+            print(f"⚠️  Đã tự động điều chỉnh k thành {k}")
             
         print(f"🔍 Searching {num_queries} queries, top-{k}...")
         
