@@ -4,7 +4,6 @@ import os
 import time
 from typing import List, Tuple, Iterator
 
-
 # ======================================================
 # =============== DATASET PREPARATION ==================
 # ======================================================
@@ -16,9 +15,7 @@ def prepare_dataset(
     data_dir="data",
     rebuild=False
 ):
-    """
-    Tạo hoặc load dataset (cache vào file .npy)
-    """
+    """Tạo hoặc load dataset (cache vào file .npy)"""
     os.makedirs(data_dir, exist_ok=True)
 
     data_path = os.path.join(data_dir, f"data_{num_elements}_{dim}.npy")
@@ -86,73 +83,43 @@ class BruteForceSearch:
     def optimized_query(self, query, k=1):
         return self._single_query_vectorized(query, k)
 
-    def batch_query(self, queries: np.ndarray, k=1, verbose=False, batch_size=1000):
-        """Chạy nhiều query tuần tự (batch)"""
-        results = []
+    def batch_query(self, queries: np.ndarray, k=1, verbose=False):
+        """Chạy nhiều query tuần tự và lưu kết quả"""
+        all_results = []
         start = time.perf_counter()
         for i, q in enumerate(queries):
-            results.append(self.optimized_query(q, k))
-            if verbose and (i + 1) % 1000 == 0:
+            res = self.optimized_query(q, k)
+            all_results.append(res)
+            if verbose and (i + 1) % 100 == 0:
                 print(f"  Đã xử lý {i+1}/{len(queries)} queries...")
         elapsed = time.perf_counter() - start
-        if verbose:
-            print(f"✅ Batch {len(queries)} queries hoàn tất ({elapsed:.2f}s)")
-        return results
-
-    def batch_global_topk(self, queries: np.ndarray, global_k: int = 50,
-                          batch_size: int = 256, verbose: bool = False):
-        """
-        Lấy ra global top-k (nhỏ nhất trên toàn bộ queries)
-        """
-        heap = []  # (-dist, q_idx, d_idx)
-        n_queries = len(queries)
-        start_all = time.perf_counter()
-
-        for qi, q in enumerate(queries):
-            if self.metric == 'euclidean':
-                q_sq = np.dot(q, q)
-                dots = np.dot(self.data, q)
-                sq_d = self._data_sq + q_sq - 2 * dots
-                sq_d = np.maximum(sq_d, 0)
-                dists = np.sqrt(sq_d)
-            elif self.metric == 'cosine':
-                qn = np.linalg.norm(q)
-                qn = qn if qn != 0 else 1e-10
-                dists = 1 - np.dot(self.data, q) / (self._data_norms * qn)
-            else:
-                raise ValueError("Unsupported metric")
-
-            for di, dist in enumerate(dists):
-                dist = float(dist)
-                if len(heap) < global_k:
-                    heapq.heappush(heap, (-dist, qi, di))
-                elif dist < -heap[0][0]:
-                    heapq.heappushpop(heap, (-dist, qi, di))
-
-            if verbose and (qi + 1) % 100 == 0:
-                print(f"⚙️  {qi+1}/{n_queries} queries processed...")
-
-        result = [(q, d, -neg) for (neg, q, d) in heap]
-        result.sort(key=lambda x: x[2])
-        elapsed_all = time.perf_counter() - start_all
-        print(f"\n✅ Global top-{global_k} hoàn tất trong {elapsed_all:.2f}s")
-        return result
+        print(f"✅ Hoàn tất {len(queries)} queries trong {elapsed:.2f}s")
+        return all_results
 
 
 # ======================================================
 # ================ HELPER RUNNERS ======================
 # ======================================================
-def run_batch_bf_search(bf: BruteForceSearch, queries: np.ndarray, k: int,
-                        batch_size: int = 100, verbose: bool = False):
-    """Chạy batch queries mà không lưu toàn bộ kết quả"""
-    total = len(queries)
-    start_all = time.perf_counter()
-    for i, q in enumerate(queries):
-        bf.optimized_query(q, k)
-        if verbose and (i + 1) % batch_size == 0:
-            print(f"  Đã xử lý {i+1}/{total}")
-    elapsed = time.perf_counter() - start_all
-    print(f"✅ Finished {total} queries in {elapsed:.3f}s ({total/elapsed:.2f} QPS)")
+def print_batch_results(results, print_mode, k, num_to_show):
+    """
+    In kết quả batch query theo lựa chọn người dùng:
+    - print_mode = 1: in tất cả kết quả
+    - print_mode = 2: chỉ in top-K của n query đầu
+    """
+    if print_mode == 1:
+        print("\n📋 Toàn bộ kết quả batch queries:")
+        for i, (indices, dists) in enumerate(results):
+            print(f"\n🔹 Query {i}:")
+            for rank, (idx, dist) in enumerate(zip(indices, dists), 1):
+                print(f"   {rank:2d}. Data {idx:6d} | dist = {dist:.6f}")
+    elif print_mode == 2:
+        print(f"\n📋 Top-{k} của {num_to_show} query đầu tiên:")
+        for i, (indices, dists) in enumerate(results[:num_to_show]):
+            print(f"\n🔹 Query {i}:")
+            for rank, (idx, dist) in enumerate(zip(indices, dists), 1):
+                print(f"   {rank:2d}. Data {idx:6d} | dist = {dist:.6f}")
+    else:
+        print("❌ Lựa chọn in không hợp lệ!")
 
 
 # ======================================================
@@ -208,16 +175,22 @@ def main():
             num_q = int(input(f"Nhập số query muốn chạy (mặc định {len(queries)}): ") or len(queries))
             k = int(input("Nhập k (mặc định 10): ") or "10")
             verbose = input("In tiến độ? (y/N): ").strip().lower() == 'y'
-            run_batch_bf_search(bf, queries[:num_q], k, verbose=verbose)
+
+            print("\n🖨️ Chọn cách in kết quả:")
+            print("1. In toàn bộ kết quả")
+            print("2. In top-K của n query đầu tiên")
+            print_mode = int(input("Lựa chọn (1/2): ") or "1")
+            num_to_show = 0
+            if print_mode == 2:
+                num_to_show = int(input("Nhập số lượng query muốn hiển thị: ") or "5")
+
+            results = bf.batch_query(queries[:num_q], k, verbose=verbose)
+            print_batch_results(results, print_mode, k, num_to_show)
 
         elif sub == "3":
             global_k = int(input("Nhập số kết quả top-k toàn cục: ") or "50")
-            verbose = input("In tiến độ? (y/N): ").strip().lower() == 'y'
-            results = bf.batch_global_topk(queries, global_k, verbose=verbose)
-            print("\n📊 Global Top-K nhỏ nhất:")
-            for rank, (q_idx, d_idx, dist) in enumerate(results[:global_k], 1):
-                print(f"{rank:3d}. Query {q_idx:4d} ↔ Data {d_idx:6d} | dist = {dist:.6f}")
-
+            print("⚠️ Tính năng này đang được rút gọn trong bản demo.")
+            # Có thể bổ sung batch_global_topk như code trước nếu muốn.
         else:
             print("❌ Lựa chọn không hợp lệ!")
 
