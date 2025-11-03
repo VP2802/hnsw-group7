@@ -95,23 +95,62 @@ class SimpleHNSW:
         # Kết quả
         print(f"⏱️ Time: {elapsed:.2f}s | QPS: {num_queries/elapsed:.1f}")
 
-        # Hỏi người dùng muốn xem bao nhiêu queries
-        show_queries = min(num_queries, 10)  # Mặc định hiển thị tối đa 10
-        if num_queries > 1:
-            try:
-                user_input = input(f"Bạn muốn xem kết quả cho bao nhiêu queries? (1-{min(num_queries, 20)}, mặc định {show_queries}): ").strip()
-                if user_input:
-                    requested = int(user_input)
-                    show_queries = min(max(1, requested), min(num_queries, 20))  # Giới hạn tối đa 20
-            except ValueError:
-                print("⚠️ Số không hợp lệ, sử dụng giá trị mặc định")
-    
-        # In kết quả cho số queries được chọn
-        for query_idx in range(show_queries):
-            print(f"\n📊 Query {query_idx + 1} results:")
-            for i, (idx, dist) in enumerate(zip(labels[query_idx][:k], distances[query_idx][:k])):
-                print(f"  {i+1:2d}. idx={idx:6d}, dist={dist:.4f}")
-    
+        # Menu in kết quả
+        while True:
+            print(f"\n🎯 Chọn cách in kết quả:")
+            print("1. In tất cả queries")
+            print("2. In N queries đầu tiên")
+            print("3. In query tại vị trí cụ thể")
+            print("4. Thoát")
+            
+            choice = input("Chọn (1/2/3/4): ").strip()
+            
+            if choice == "4":
+                break
+                
+            elif choice == "1":
+                # In tất cả queries
+                print(f"\n📊 In tất cả {num_queries} queries:")
+                for query_idx in range(num_queries):
+                    print(f"Query {query_idx + 1}:")
+                    for i, (idx, dist) in enumerate(zip(labels[query_idx][:k], distances[query_idx][:k])):
+                        print(f"  {i+1:2d}. idx={idx:6d}, dist={dist:.4f}")
+                    print()
+                    
+            elif choice == "2":
+                # In N queries đầu
+                try:
+                    n = int(input(f"Nhập số queries đầu muốn in (1-{num_queries}): ").strip())
+                    n = max(1, min(n, num_queries))  # Đảm bảo trong khoảng hợp lệ
+                    
+                    print(f"\n📊 In {n} queries đầu tiên:")
+                    for query_idx in range(n):
+                        print(f"Query {query_idx + 1}:")
+                        for i, (idx, dist) in enumerate(zip(labels[query_idx][:k], distances[query_idx][:k])):
+                            print(f"  {i+1:2d}. idx={idx:6d}, dist={dist:.4f}")
+                        print()
+                        
+                except ValueError:
+                    print("❌ Số không hợp lệ!")
+                    
+            elif choice == "3":
+                # In query tại vị trí cụ thể
+                try:
+                    pos = int(input(f"Nhập vị trí query (1-{num_queries}): ").strip())
+                    if 1 <= pos <= num_queries:
+                        query_idx = pos - 1
+                        print(f"\n📊 Query tại vị trí {pos}:")
+                        for i, (idx, dist) in enumerate(zip(labels[query_idx][:k], distances[query_idx][:k])):
+                            print(f"  {i+1:2d}. idx={idx:6d}, dist={dist:.4f}")
+                    else:
+                        print(f"❌ Vị trí phải từ 1 đến {num_queries}!")
+                        
+                except ValueError:
+                    print("❌ Số không hợp lệ!")
+                    
+            else:
+                print("❌ Lựa chọn không hợp lệ!")
+        
         return labels, distances
 
 def main():
