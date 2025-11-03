@@ -94,10 +94,24 @@ class SimpleHNSW:
         
         # Kết quả
         print(f"⏱️ Time: {elapsed:.2f}s | QPS: {num_queries/elapsed:.1f}")
-        print(f"📊 First query results:")
-        for i, (idx, dist) in enumerate(zip(labels[0][:k], distances[0][:k])):
-            print(f"  {i+1:2d}. idx={idx:6d}, dist={dist:.4f}")
-            
+
+        # Hỏi người dùng muốn xem bao nhiêu queries
+        show_queries = min(num_queries, 10)  # Mặc định hiển thị tối đa 10
+        if num_queries > 1:
+            try:
+                user_input = input(f"Bạn muốn xem kết quả cho bao nhiêu queries? (1-{min(num_queries, 20)}, mặc định {show_queries}): ").strip()
+                if user_input:
+                    requested = int(user_input)
+                    show_queries = min(max(1, requested), min(num_queries, 20))  # Giới hạn tối đa 20
+            except ValueError:
+                print("⚠️ Số không hợp lệ, sử dụng giá trị mặc định")
+    
+        # In kết quả cho số queries được chọn
+        for query_idx in range(show_queries):
+            print(f"\n📊 Query {query_idx + 1} results:")
+            for i, (idx, dist) in enumerate(zip(labels[query_idx][:k], distances[query_idx][:k])):
+                print(f"  {i+1:2d}. idx={idx:6d}, dist={dist:.4f}")
+    
         return labels, distances
 
 def main():
