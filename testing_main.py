@@ -58,7 +58,7 @@ class SimpleHNSW:
         actual_vectors = len(dataset)
         if num_vectors > actual_vectors:
             print(f"❌ Lỗi: Yêu cầu {num_vectors:,} vectors nhưng index có sẵn chỉ có {actual_vectors:,} vectors!")
-        return None
+            return None
             
         self.index = HNSWIndex(dim=self.dim, space='cosine')
         self.index.load_index(self.index_path, max_elements=num_vectors)
