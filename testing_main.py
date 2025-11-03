@@ -77,7 +77,7 @@ class SimpleHNSW:
         if k > len(dataset):
             print(f"❌ Lỗi: k={k} vượt quá số vectors trong index ({len(dataset)})!")
             k = len(dataset)
-            print(f"⚠️  Đã tự động điều chỉnh k thành {k}")
+            print(f"⚠️ Đã tự động điều chỉnh k thành {k}")
             
         print(f"🔍 Searching {num_queries} queries, top-{k}...")
         
