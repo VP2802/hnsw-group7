@@ -18,7 +18,7 @@ class SimpleHNSW:
         self.index_path = f"{self.data_dir}/hnsw_index.bin"
         self.index = None
         
-    def build_index(self, num_vectors, M=16, ef_construction=100):
+    def build_index(self, num_vectors, M=16, ef_construction=200):
         """Build index với N vectors"""
         print(f"🔄 Building index với {num_vectors:,} vectors...")
         
