@@ -13,12 +13,12 @@ from visualization import demo_greedy_search_animation  # chính xác theo file 
 def main():
    parser = argparse.ArgumentParser(description="Compare Brute-force vs HNSW performance")
    parser.add_argument("--metric", type=str, default="euclidean", choices=["euclidean", "cosine"])
-   parser.add_argument("--n_vectors", type=int, default=10000)   # nhỏ để demo
+   parser.add_argument("--n_vectors", type=int, default=100000)   # nhỏ để demo
    parser.add_argument("--n_queries", type=int, default=5)
    parser.add_argument("--dim", type=int, default=128)
    parser.add_argument("--k", type=int, default=5)
    parser.add_argument("--seed", type=int, default=123)
-   parser.add_argument("--ef", type=int, default=200)
+   parser.add_argument("--ef", type=int, default=300)
    parser.add_argument("--M", type=int, default=8)
    parser.add_argument("--show", action="store_true")
    parser.add_argument("--demo_greedy", action="store_true", help="Run greedy search animation demo")
