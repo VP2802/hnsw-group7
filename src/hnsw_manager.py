@@ -3,6 +3,7 @@ import os
 import time
 import hnswlib
 import json
+import pickle
 from article_embedder import ArticleEmbedder
 
 class ArticleHNSWManager:
@@ -36,7 +37,20 @@ class ArticleHNSWManager:
         print("ĐANG XÂY DỰNG INDEX TÌM KIẾM BÀI BÁO")
         print("=" * 50)
         
-        valid_articles, embeddings = self.embedder.embed_articles(articles)
+        print(f"Tổng số bài báo đầu vào: {len(articles)}")
+        
+        # Lọc các bài báo trùng lặp dựa trên link
+        unique_articles = []
+        seen_links = set()
+        
+        for article in articles:
+            if article['link'] not in seen_links:
+                unique_articles.append(article)
+                seen_links.add(article['link'])
+        
+        print(f"Số bài báo sau khi lọc trùng: {len(unique_articles)}")
+        
+        valid_articles, embeddings = self.embedder.embed_articles(unique_articles)
         self.articles = valid_articles
         self.all_embeddings = embeddings
         
@@ -44,7 +58,7 @@ class ArticleHNSWManager:
             print("Không có embeddings để xây dựng index!")
             return False
         
-        print(f"Dữ liệu: {len(embeddings)} bài báo, {embeddings.shape[1]} chiều")
+        print(f"Dữ liệu embedding: {len(embeddings)} bài báo, {embeddings.shape[1]} chiều")
         
         # Xây dựng HNSW index
         print("Đang xây dựng HNSW index...")
@@ -69,7 +83,14 @@ class ArticleHNSWManager:
         return True
     
     def _cosine_similarity(self, vec1, vec2):
-        return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+        dot_product = np.dot(vec1, vec2)
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+        
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+            
+        return dot_product / (norm1 * norm2)
     
     def _save_metadata(self):
         metadata = {
@@ -77,12 +98,17 @@ class ArticleHNSWManager:
             'total_articles': len(self.articles),
             'articles': self.articles,
             'build_time': time.strftime("%Y-%m-%d %H:%M:%S"),
-            'embeddings': self.all_embeddings.tolist() if self.all_embeddings is not None else None
         }
         
         metadata_path = os.path.join(self.index_dir, 'metadata.json')
         with open(metadata_path, 'w', encoding='utf-8') as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
+        
+        # Lưu embeddings riêng để tránh file quá lớn
+        if self.all_embeddings is not None:
+            embeddings_path = os.path.join(self.index_dir, 'embeddings.npy')
+            np.save(embeddings_path, self.all_embeddings)
+            print(f"Đã lưu embeddings: {embeddings_path}")
     
     def load_index(self):
         print(f"Đang tải index từ {self.index_dir}...")
@@ -97,9 +123,11 @@ class ArticleHNSWManager:
         self.dim = metadata['dim']
         self.articles = metadata['articles']
         
-        if 'embeddings' in metadata and metadata['embeddings'] is not None:
-            print("Đang tải embeddings từ cache...")
-            self.all_embeddings = np.array(metadata['embeddings'], dtype=np.float32)
+        # Tải embeddings từ file .npy
+        embeddings_path = os.path.join(self.index_dir, 'embeddings.npy')
+        if os.path.exists(embeddings_path):
+            print("Đang tải embeddings từ file...")
+            self.all_embeddings = np.load(embeddings_path)
             print(f"Đã tải {len(self.all_embeddings)} embeddings")
         else:
             print("Không tìm thấy embeddings cache, cần embed lại...")
@@ -166,6 +194,7 @@ class ArticleHNSWManager:
         print(f"  Kết quả trùng: {len(common_results)}/{k}")
         
         return {
+            'query': query,
             'brute_force': {
                 'results': [{'index': idx, 'similarity': sim} for idx, sim in brute_results],
                 'time': brute_time
@@ -181,6 +210,26 @@ class ArticleHNSWManager:
             }
         }
     
+    def display_search_results(self, search_result, show_details=True):
+        """Hiển thị kết quả tìm kiếm"""
+        query = search_result['query']
+        hnsw_results = search_result['hnsw']['results']
+        
+        print(f"\nTOP KẾT QUẢ CHO: '{query}'")
+        print("-" * 80)
+        
+        for i, result in enumerate(hnsw_results[:5], 1):
+            idx = result['index']
+            similarity = result['similarity']
+            article = self.articles[idx]
+            
+            print(f"{i}. [{similarity:.3f}] {article['title']}")
+            print(f"   📍 {article['source']} | {article['category']} | {article['language']}")
+            if show_details and article['summary']:
+                summary = article['summary'][:150] + "..." if len(article['summary']) > 150 else article['summary']
+                print(f"   📝 {summary}")
+            print()
+    
     def benchmark_multiple_queries(self, queries, k=10):
         print(f"BENCHMARK VỚI {len(queries)} QUERIES")
         print("=" * 60)
@@ -188,41 +237,127 @@ class ArticleHNSWManager:
         results = []
         for query in queries:
             comparison = self.search_with_comparison(query, k=k)
-            results.append({'query': query, **comparison})
+            results.append(comparison)
+            
+            # Hiển thị kết quả cho query này
+            self.display_search_results(comparison, show_details=True)
         
-        print(f"TỔNG KẾT BENCHMARK:")
+        # Tổng kết benchmark
+        print(f"\n{'='*80}")
+        print("TỔNG KẾT BENCHMARK")
+        print(f"{'='*80}")
+        
         avg_speedup = np.mean([r['comparison']['speedup'] for r in results])
         avg_accuracy = np.mean([r['comparison']['accuracy'] for r in results])
         avg_brute_time = np.mean([r['brute_force']['time'] for r in results])
         avg_hnsw_time = np.mean([r['hnsw']['time'] for r in results])
         
-        print(f"  Thời gian Brute Force trung bình: {avg_brute_time:.4f}s")
-        print(f"  Thời gian HNSW trung bình: {avg_hnsw_time:.4f}s")
-        print(f"  Tốc độ tăng trung bình: {avg_speedup:.1f}x")
-        print(f"  Độ chính xác trung bình: {avg_accuracy:.1%}")
+        print(f"Thời gian Brute Force trung bình: {avg_brute_time:.4f}s")
+        print(f"Thời gian HNSW trung bình: {avg_hnsw_time:.4f}s")
+        print(f"Tốc độ tăng trung bình: {avg_speedup:.1f}x")
+        print(f"Độ chính xác trung bình: {avg_accuracy:.1%}")
+        
+        # Hiển thị chi tiết từng query
+        print(f"\n{'='*80}")
+        print("CHI TIẾT TỪNG QUERY")
+        print(f"{'='*80}")
+        
+        for result in results:
+            query = result['query']
+            speedup = result['comparison']['speedup']
+            accuracy = result['comparison']['accuracy']
+            brute_time = result['brute_force']['time']
+            hnsw_time = result['hnsw']['time']
+            
+            print(f"'{query}': Brute={brute_time:.4f}s, HNSW={hnsw_time:.4f}s, "
+                  f"Speedup={speedup:.1f}x, Accuracy={accuracy:.1%}")
         
         return results
 
-def build_article_index():
+def build_and_test_article_index():
     from crawl_articles import ArticleCrawler
     
     print("BENCHMARK: HNSW vs BRUTE FORCE")
     print("=" * 50)
     
+    # Tải hoặc crawl dữ liệu mới
     crawler = ArticleCrawler()
     articles = crawler.load_articles()
     
     if not articles:
-        print("Không có dữ liệu bài báo!")
-        return
+        print("Không có dữ liệu bài báo, đang crawl mới...")
+        articles = crawler.crawl_vnexpress_rss(max_articles=1000, verbose=False)
+        if articles:
+            crawler.save_articles(articles)
+        else:
+            print("Không crawl được dữ liệu mới!")
+            return
     
+    print(f"Đã tải {len(articles)} bài báo")
+    
+    # Xây dựng index
     hnsw_mgr = ArticleHNSWManager()
     success = hnsw_mgr.build_index(articles)
     
-    if success:
-        test_queries = ["chứng khoán", "công nghệ", "giáo dục", "thể thao", "sức khỏe"]
-        benchmark_results = hnsw_mgr.benchmark_multiple_queries(test_queries, k=10)
-        print("BENCHMARK HOÀN TẤT!")
+    if not success:
+        print("Xây dựng index thất bại!")
+        return
+    
+    # Test với queries đa dạng
+    test_queries = [
+        "bóng đá Premier League",          # Thể thao quốc tế
+        "chứng khoán thị trường",          # Kinh tế
+        "công nghệ AI trí tuệ nhân tạo",   # Công nghệ
+        "sức khỏe dinh dưỡng",             # Sức khỏe
+        "giáo dục đại học",                # Giáo dục
+        "phim ảnh Hollywood",              # Giải trí
+        "du lịch Châu Âu",                 # Du lịch
+        "biến đổi khí hậu",                # Khoa học
+        "luật pháp hình sự"                # Pháp luật
+    ]
+    
+    print(f"\nBẮT ĐẦU TEST VỚI {len(test_queries)} QUERIES ĐA DẠNG")
+    print("=" * 80)
+    
+    benchmark_results = hnsw_mgr.benchmark_multiple_queries(test_queries, k=10)
+    
+    # Lưu kết quả benchmark
+    benchmark_file = os.path.join(hnsw_mgr.index_dir, 'benchmark_results.json')
+    with open(benchmark_file, 'w', encoding='utf-8') as f:
+        json.dump(benchmark_results, f, ensure_ascii=False, indent=2)
+    
+    print(f"\nĐã lưu kết quả benchmark: {benchmark_file}")
+    print("BENCHMARK HOÀN TẤT!")
+
+def test_existing_index():
+    """Test với index đã có sẵn"""
+    hnsw_mgr = ArticleHNSWManager()
+    
+    try:
+        hnsw_mgr.load_index()
+        print(f"Đã tải index với {len(hnsw_mgr.articles)} bài báo")
+        
+        # Test nhanh
+        test_queries = ["bóng đá", "công nghệ", "chính trị"]
+        hnsw_mgr.benchmark_multiple_queries(test_queries, k=5)
+        
+    except Exception as e:
+        print(f"Lỗi khi tải index: {e}")
+        print("Cần xây dựng index mới...")
+        build_and_test_article_index()
 
 if __name__ == "__main__":
-    build_article_index()
+    print("HNSW MANAGER - HỆ THỐNG TÌM KIẾM BÀI BÁO")
+    print("=" * 50)
+    
+    # Kiểm tra xem index đã tồn tại chưa
+    index_exists = os.path.exists(os.path.join('article_index', 'metadata.json'))
+    
+    if index_exists:
+        choice = input("Index đã tồn tại. Bạn muốn:\n1. Test index hiện có\n2. Xây dựng index mới\nChọn (1/2): ").strip()
+        if choice == "1":
+            test_existing_index()
+        else:
+            build_and_test_article_index()
+    else:
+        build_and_test_article_index()
