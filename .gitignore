@@ -1,0 +1,112 @@
+# ===========================================
+# PYTHON - Files biên dịch và môi trường ảo
+# ===========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pip-selfcheck.json
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===========================================
+# DATA FILES - QUAN TRỌNG: Không upload dữ liệu
+# ===========================================
+# Thư mục dữ liệu bài báo
+article_data/
+# Thư mục index HNSW  
+article_index/
+# File dữ liệu lớn
+*.json
+*.npy
+*.npz
+*.bin
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.model
+*.weights
+
+# ===========================================
+# LOGS VÀ TEMP FILES
+# ===========================================
+*.log
+logs/
+*.tmp
+*.temp
+.cache/
+
+# ===========================================
+# HỆ ĐIỀU HÀNH
+# ===========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ===========================================
+# IDE & EDITOR FILES
+# ===========================================
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Sublime Text
+*.sublime-*
+
+# ===========================================
+# JUPYTER NOTEBOOK (nếu có)
+# ===========================================
+.ipynb_checkpoints/
+
+# ===========================================
+# TEST & COVERAGE
+# ===========================================
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+
+# ===========================================
+# PACKAGING
+# ===========================================
+dist/
+build/
+*.mo
+*.pot
+
+# ===========================================
+# ENVIRONMENT VARIABLES
+# ===========================================
+.env
+.venv
+.env.local
+.env.production 
