@@ -33,6 +33,17 @@ class ArticleHNSWManager:
             'index_dir': self.index_dir
         }
     
+    def get_available_sources(self):
+        """Lấy danh sách các nguồn báo có sẵn"""
+        if not self.articles:
+            return []
+        
+        sources = set()
+        for article in self.articles:
+            sources.add(article['source'])
+        
+        return sorted(list(sources))
+    
     def build_index(self, articles, max_elements=10000, ef_construction=200, M=16):
         print("ĐANG XÂY DỰNG INDEX TÌM KIẾM BÀI BÁO")
         print("=" * 50)
@@ -145,11 +156,54 @@ class ArticleHNSWManager:
         print(f"Tải thành công: {len(self.articles)} bài báo")
         return True
     
-    def search_with_comparison(self, query, k=10):
+    def search_by_source(self, source_name, k=20):
+        """Tìm kiếm bài báo theo nguồn báo cụ thể"""
+        if not self.articles:
+            raise RuntimeError("Hệ thống chưa được khởi tạo!")
+        
+        print(f"TÌM KIẾM THEO NGUỒN BÁO: '{source_name}'")
+        print("=" * 60)
+        
+        # Tìm tất cả bài báo từ nguồn này
+        source_articles = []
+        for i, article in enumerate(self.articles):
+            if source_name.lower() in article['source'].lower():
+                source_articles.append((i, article))
+        
+        print(f"Tìm thấy {len(source_articles)} bài báo từ {source_name}")
+        
+        if not source_articles:
+            return {
+                'source': source_name,
+                'results': [],
+                'count': 0
+            }
+        
+        # Sắp xếp theo thời gian (nếu có)
+        source_articles.sort(key=lambda x: x[1].get('published', ''), reverse=True)
+        
+        results = []
+        for idx, (article_idx, article) in enumerate(source_articles[:k]):
+            results.append({
+                'index': article_idx,
+                'article': article,
+                'rank': idx + 1
+            })
+        
+        return {
+            'source': source_name,
+            'results': results,
+            'count': len(source_articles)
+        }
+    
+    def search_with_comparison(self, query, k=10, filter_source=None):
+        """Tìm kiếm với khả năng lọc theo nguồn báo"""
         if self.index is None or self.all_embeddings is None:
             raise RuntimeError("Hệ thống chưa được khởi tạo!")
         
         print(f"SO SÁNH TÌM KIẾM: '{query}'")
+        if filter_source:
+            print(f"LỌC THEO NGUỒN: '{filter_source}'")
         print("=" * 60)
         
         query_vector = self.embedder.embed_query(query)
@@ -160,6 +214,10 @@ class ArticleHNSWManager:
         
         similarities = []
         for i in range(len(self.all_embeddings)):
+            # Lọc theo nguồn nếu có
+            if filter_source and filter_source.lower() not in self.articles[i]['source'].lower():
+                continue
+                
             similarity = self._cosine_similarity(query_vector[0], self.all_embeddings[i])
             similarities.append((i, similarity))
         
@@ -171,40 +229,56 @@ class ArticleHNSWManager:
         print("HNSW SEARCH...")
         start_time = time.time()
         
-        labels, distances = self.index.knn_query(query_vector, k=k)
-        hnsw_time = time.time() - start_time
+        labels, distances = self.index.knn_query(query_vector, k=min(k*3, len(self.articles)))  # Lấy nhiều hơn để lọc
         
+        # Lọc kết quả theo nguồn nếu có
         hnsw_results = []
         for i, (label, distance) in enumerate(zip(labels[0], distances[0])):
+            article_idx = int(label)
+            
+            # Lọc theo nguồn
+            if filter_source and filter_source.lower() not in self.articles[article_idx]['source'].lower():
+                continue
+                
             similarity = 1 - distance
-            hnsw_results.append((int(label), similarity))
+            hnsw_results.append((article_idx, similarity))
+            
+            if len(hnsw_results) >= k:
+                break
+        
+        hnsw_time = time.time() - start_time
         
         # So sánh
         print(f"KẾT QUẢ SO SÁNH:")
         print(f"  Brute Force: {brute_time:.4f}s")
         print(f"  HNSW: {hnsw_time:.4f}s")
-        print(f"  Tốc độ tăng: {brute_time/hnsw_time:.1f}x")
+        if hnsw_time > 0:
+            print(f"  Tốc độ tăng: {brute_time/hnsw_time:.1f}x")
         
         brute_indices = {idx for idx, _ in brute_results}
         hnsw_indices = {idx for idx, _ in hnsw_results}
         common_results = brute_indices & hnsw_indices
-        accuracy = len(common_results) / k
+        
+        accuracy = len(common_results) / min(len(brute_results), len(hnsw_results)) if min(len(brute_results), len(hnsw_results)) > 0 else 0
         
         print(f"  Độ chính xác Top-{k}: {accuracy:.1%}")
-        print(f"  Kết quả trùng: {len(common_results)}/{k}")
+        print(f"  Kết quả trùng: {len(common_results)}/{min(len(brute_results), len(hnsw_results))}")
         
         return {
             'query': query,
+            'filter_source': filter_source,
             'brute_force': {
                 'results': [{'index': idx, 'similarity': sim} for idx, sim in brute_results],
-                'time': brute_time
+                'time': brute_time,
+                'count': len(brute_results)
             },
             'hnsw': {
                 'results': [{'index': idx, 'similarity': sim} for idx, sim in hnsw_results],
-                'time': hnsw_time
+                'time': hnsw_time,
+                'count': len(hnsw_results)
             },
             'comparison': {
-                'speedup': brute_time / hnsw_time,
+                'speedup': brute_time / hnsw_time if hnsw_time > 0 else 0,
                 'accuracy': accuracy,
                 'common_results': len(common_results)
             }
@@ -212,10 +286,36 @@ class ArticleHNSWManager:
     
     def display_search_results(self, search_result, show_details=True):
         """Hiển thị kết quả tìm kiếm"""
-        query = search_result['query']
-        hnsw_results = search_result['hnsw']['results']
+        # Xử lý kết quả tìm kiếm theo nguồn
+        if 'source' in search_result:
+            source = search_result['source']
+            results = search_result['results']
+            
+            print(f"\nTOP KẾT QUẢ TỪ NGUỒN: '{source}'")
+            print(f"Tổng số bài báo: {search_result['count']}")
+            print("-" * 80)
+            
+            for i, result in enumerate(results[:10], 1):
+                article = result['article']
+                print(f"{i}. {article['title']}")
+                print(f"   Nguồn: {article['source']} | {article['category']} | {article['language']}")
+                if show_details and article.get('summary'):
+                    summary = article['summary'][:150] + "..." if len(article['summary']) > 150 else article['summary']
+                    print(f"   Tóm tắt: {summary}")
+                print(f"   Link: {article['link']}")
+                print()
+            return
         
-        print(f"\nTOP KẾT QUẢ CHO: '{query}'")
+        # Xử lý kết quả tìm kiếm thông thường
+        query = search_result.get('query', '')
+        source = search_result.get('filter_source', '')
+        hnsw_results = search_result.get('hnsw', {}).get('results', [])
+        
+        title = f"TOP KẾT QUẢ CHO: '{query}'"
+        if source:
+            title += f" [NGUỒN: {source}]"
+            
+        print(f"\n{title}")
         print("-" * 80)
         
         for i, result in enumerate(hnsw_results[:5], 1):
@@ -224,56 +324,14 @@ class ArticleHNSWManager:
             article = self.articles[idx]
             
             print(f"{i}. [{similarity:.3f}] {article['title']}")
-            print(f"   📍 {article['source']} | {article['category']} | {article['language']}")
-            if show_details and article['summary']:
+            print(f"   Nguồn: {article['source']} | {article['category']} | {article['language']}")
+            if show_details and article.get('summary'):
                 summary = article['summary'][:150] + "..." if len(article['summary']) > 150 else article['summary']
-                print(f"   📝 {summary}")
+                print(f"   Tóm tắt: {summary}")
+            print(f"   Link: {article['link']}")
             print()
-    
-    def benchmark_multiple_queries(self, queries, k=10):
-        print(f"BENCHMARK VỚI {len(queries)} QUERIES")
-        print("=" * 60)
-        
-        results = []
-        for query in queries:
-            comparison = self.search_with_comparison(query, k=k)
-            results.append(comparison)
-            
-            # Hiển thị kết quả cho query này
-            self.display_search_results(comparison, show_details=True)
-        
-        # Tổng kết benchmark
-        print(f"\n{'='*80}")
-        print("TỔNG KẾT BENCHMARK")
-        print(f"{'='*80}")
-        
-        avg_speedup = np.mean([r['comparison']['speedup'] for r in results])
-        avg_accuracy = np.mean([r['comparison']['accuracy'] for r in results])
-        avg_brute_time = np.mean([r['brute_force']['time'] for r in results])
-        avg_hnsw_time = np.mean([r['hnsw']['time'] for r in results])
-        
-        print(f"Thời gian Brute Force trung bình: {avg_brute_time:.4f}s")
-        print(f"Thời gian HNSW trung bình: {avg_hnsw_time:.4f}s")
-        print(f"Tốc độ tăng trung bình: {avg_speedup:.1f}x")
-        print(f"Độ chính xác trung bình: {avg_accuracy:.1%}")
-        
-        # Hiển thị chi tiết từng query
-        print(f"\n{'='*80}")
-        print("CHI TIẾT TỪNG QUERY")
-        print(f"{'='*80}")
-        
-        for result in results:
-            query = result['query']
-            speedup = result['comparison']['speedup']
-            accuracy = result['comparison']['accuracy']
-            brute_time = result['brute_force']['time']
-            hnsw_time = result['hnsw']['time']
-            
-            print(f"'{query}': Brute={brute_time:.4f}s, HNSW={hnsw_time:.4f}s, "
-                  f"Speedup={speedup:.1f}x, Accuracy={accuracy:.1%}")
-        
-        return results
 
+# Các hàm khác giữ nguyên...
 def build_and_test_article_index():
     from crawl_articles import ArticleCrawler
     
@@ -305,15 +363,11 @@ def build_and_test_article_index():
     
     # Test với queries đa dạng
     test_queries = [
-        "bóng đá Premier League",          # Thể thao quốc tế
-        "chứng khoán thị trường",          # Kinh tế
-        "công nghệ AI trí tuệ nhân tạo",   # Công nghệ
-        "sức khỏe dinh dưỡng",             # Sức khỏe
-        "giáo dục đại học",                # Giáo dục
-        "phim ảnh Hollywood",              # Giải trí
-        "du lịch Châu Âu",                 # Du lịch
-        "biến đổi khí hậu",                # Khoa học
-        "luật pháp hình sự"                # Pháp luật
+        "bóng đá Premier League",
+        "chứng khoán thị trường",
+        "công nghệ AI trí tuệ nhân tạo",
+        "sức khỏe dinh dưỡng",
+        "giáo dục đại học"
     ]
     
     print(f"\nBẮT ĐẦU TEST VỚI {len(test_queries)} QUERIES ĐA DẠNG")
@@ -327,6 +381,19 @@ def build_and_test_article_index():
         json.dump(benchmark_results, f, ensure_ascii=False, indent=2)
     
     print(f"\nĐã lưu kết quả benchmark: {benchmark_file}")
+    
+    # Test tìm kiếm theo nguồn
+    print("\nTEST TÌM KIẾM THEO NGUỒN BÁO")
+    print("=" * 50)
+    
+    test_sources = ["Dân Trí", "VnExpress", "BBC", "Reuters"]
+    for source in test_sources:
+        try:
+            result = hnsw_mgr.search_by_source(source, k=5)
+            hnsw_mgr.display_search_results(result)
+        except Exception as e:
+            print(f"Lỗi khi tìm kiếm nguồn {source}: {e}")
+    
     print("BENCHMARK HOÀN TẤT!")
 
 def test_existing_index():
@@ -337,9 +404,8 @@ def test_existing_index():
         hnsw_mgr.load_index()
         print(f"Đã tải index với {len(hnsw_mgr.articles)} bài báo")
         
-        # Test nhanh
-        test_queries = ["bóng đá", "công nghệ", "chính trị"]
-        hnsw_mgr.benchmark_multiple_queries(test_queries, k=5)
+        # Chạy chế độ tương tác
+        hnsw_mgr.interactive_search()
         
     except Exception as e:
         print(f"Lỗi khi tải index: {e}")
