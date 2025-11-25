@@ -312,7 +312,7 @@ class ArticleSearchApp:
             return
         
         try:
-            k = int(input(f"Số kết quả (mặc định 10): ").strip() or "10")
+            k = int(input(f"Số kết quả k: ").strip() or "10")
             k = min(k, 30)  # Giới hạn để brute force không quá chậm
         except:
             k = 10

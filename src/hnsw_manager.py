@@ -331,6 +331,25 @@ class ArticleHNSWManager:
             print(f"   Link: {article['link']}")
             print()
 
+    def benchmark_multiple_queries(self, queries, k=10):
+        results = {}
+        for query in queries:
+            res = self.search_with_comparison(query, k=k)
+            results[query] = res
+        return results
+
+    def interactive_search(self):
+        while True:
+            query = input("\nNhập câu truy vấn (hoặc 'exit' để thoát): ").strip()
+            if query.lower() in ['exit', 'quit']:
+                break
+            filter_source = input("Lọc theo nguồn (Enter để bỏ qua): ").strip() or None
+            k = input("Số kết quả muốn hiển thị (default 5): ").strip()
+            k = int(k) if k.isdigit() else 5
+            res = self.search_with_comparison(query, k=k, filter_source=filter_source)
+            self.display_search_results(res)
+
+
 # Các hàm khác giữ nguyên...
 def build_and_test_article_index():
     from crawl_articles import ArticleCrawler

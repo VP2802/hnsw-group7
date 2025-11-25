@@ -34,7 +34,7 @@ class ArticleEmbedder:
             'bbc', 'reuters', 'cnn', 'the guardian', 'espn'
         ]
         
-        query_lower = query.lower()
+        query_lower = query.lower() 
         
         # Kiểm tra nếu query chứa từ khóa chỉ nguồn báo
         for keyword in source_keywords:

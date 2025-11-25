@@ -10,17 +10,18 @@ class ArticleCrawler:
         self.data_dir = data_dir
         os.makedirs(data_dir, exist_ok=True)
     
-    def crawl_vnexpress_rss(self, max_articles=1000, verbose=False):
+    def crawl_vnexpress_rss(self, max_articles=5000, verbose=False):
         print("ĐANG CRAWL BÀI BÁO TỪ CÁC TRANG BÁO...")
         print("=" * 50)
         
         rss_feeds = [
-            # VIETNAMESE NEWS - TIẾNG VIỆT
+            # Báo Tieng Viet
             'https://vnexpress.net/rss/tin-moi-nhat.rss',
             'https://vnexpress.net/rss/thoi-su.rss',
             'https://vnexpress.net/rss/the-gioi.rss',
             'https://vnexpress.net/rss/kinh-doanh.rss',
             'https://vnexpress.net/rss/giai-tri.rss',
+            'https://vnexpress.net/rss/the-thao.rss',
             'https://vnexpress.net/rss/phap-luat.rss',
             'https://vnexpress.net/rss/giao-duc.rss',
             'https://vnexpress.net/rss/suc-khoe.rss',
@@ -29,7 +30,6 @@ class ArticleCrawler:
             'https://vnexpress.net/rss/khoa-hoc.rss',
             'https://vnexpress.net/rss/so-hoa.rss',
             'https://vnexpress.net/rss/oto-xe-may.rss',
-            'https://vnexpress.net/rss/the-thao.rss',
             
             'https://dantri.com.vn/rss/thoi-su.rss',
             'https://dantri.com.vn/rss/the-gioi.rss',
@@ -39,87 +39,179 @@ class ArticleCrawler:
             'https://dantri.com.vn/rss/giao-duc.rss',
             'https://dantri.com.vn/rss/suc-khoe.rss',
             'https://dantri.com.vn/rss/du-lich.rss',
-            'https://dantri.com.vn/rss/khoa-hoc.rss',
-            'https://dantri.com.vn/rss/cong-nghe.rss',
             
-            'https://thanhnien.vn/rss/the-thao.rss',
-            'https://thanhnien.vn/rss/the-gioi.rss',
-            'https://thanhnien.vn/rss/kinh-te.rss',
-            'https://thanhnien.vn/rss/giao-duc.rss',
-            'https://thanhnien.vn/rss/thoi-su.rss',
-            'https://thanhnien.vn/rss/van-hoa.rss',
-            'https://thanhnien.vn/rss/gioi-tre.rss',
-            
-            'https://tuoitre.vn/rss/the-thao.rss',
+            'https://tuoitre.vn/rss/thoi-su.rss',
             'https://tuoitre.vn/rss/the-gioi.rss',
-            'https://tuoitre.vn/rss/kinh-te.rss',
+            'https://tuoitre.vn/rss/kinh-doanh.rss',
+            'https://tuoitre.vn/rss/giai-tri.rss',
+            'https://tuoitre.vn/rss/the-thao.rss',
             'https://tuoitre.vn/rss/giao-duc.rss',
-            'https://tuoitre.vn/rss/van-hoa.rss',
-            'https://tuoitre.vn/rss/nhip-song-tre.rss',
+            'https://tuoitre.vn/rss/suc-khoe.rss',
             
-            # THÊM CÁC BÁO TIẾNG VIỆT KHÁC - THỂ THAO ĐA DẠNG
-            'https://laodong.vn/rss/the-thao.rss',
-            'https://laodong.vn/rss/the-gioi.rss',
-            'https://laodong.vn/rss/thoi-su.rss',
-            'https://laodong.vn/rss/du-lich.rss',
+            'https://thanhnien.vn/rss/thoi-su.rss',
+            'https://thanhnien.vn/rss/the-gioi.rss',
+            'https://thanhnien.vn/rss/kinh-doanh.rss',
+            'https://thanhnien.vn/rss/giai-tri.rss',
+            'https://thanhnien.vn/rss/the-thao.rss',
+            'https://thanhnien.vn/rss/giao-duc.rss',
+            'https://thanhnien.vn/rss/suc-khoe.rss',
             
-            'https://vietnamnet.vn/rss/the-thao.rss',
-            'https://vietnamnet.vn/rss/the-gioi.rss',
             'https://vietnamnet.vn/rss/thoi-su.rss',
+            'https://vietnamnet.vn/rss/the-gioi.rss',
+            'https://vietnamnet.vn/rss/kinh-doanh.rss',
             'https://vietnamnet.vn/rss/giai-tri.rss',
-            'https://vietnamnet.vn/rss/du-lich.rss',
+            'https://vietnamnet.vn/rss/the-thao.rss',
+            'https://vietnamnet.vn/rss/giao-duc.rss',
+            'https://vietnamnet.vn/rss/suc-khoe.rss',
             
-            'https://zingnews.vn/rss/the-thao.rss',
+            'https://zingnews.vn/rss/thoi-su.rss',
             'https://zingnews.vn/rss/the-gioi.rss',
+            'https://zingnews.vn/rss/kinh-doanh.rss',
             'https://zingnews.vn/rss/giai-tri.rss',
-            'https://zingnews.vn/rss/du-lich.rss',
+            'https://zingnews.vn/rss/the-thao.rss',
             
-            # BÓNG ĐÁ QUỐC TẾ - TIẾNG VIỆT
-            'https://www.24h.com.vn/bong-da-c48.rss',
-            'https://www.24h.com.vn/bong-da-quoc-te-c269.rss',
+            'https://laodong.vn/rss/thoi-su.rss',
+            'https://laodong.vn/rss/the-gioi.rss',
+            'https://laodong.vn/rss/kinh-doanh.rss',
+            'https://laodong.vn/rss/the-thao.rss',
+            
+            'https://cafef.vn/rss/thoi-su.rss',
+            'https://cafef.vn/rss/the-gioi.rss',
+            'https://cafef.vn/rss/kinh-doanh.rss',
+            'https://cafef.vn/rss/thi-truong.rss',
+            
+            'https://vtv.vn/rss/thoi-su.rss',
+            'https://vtv.vn/rss/the-gioi.rss',
+            'https://vtv.vn/rss/kinh-te.rss',
+            
+            # Bao The Thao
+            'https://www.24h.com.vn/rss/tin-bong-da.rss',
+            'https://bongdaplus.vn/rss/bong-da-viet-nam.rss',
             'https://bongdaplus.vn/rss/bong-da-quoc-te.rss',
+            'https://thethao247.vn/rss/tin-bong-da.rss',
             'https://webthethao.vn/rss/bong-da.rss',
-            'https://thethao247.vn/bong-da.rss',
-            'https://thethao247.vn/bong-da-quoc-te-c2.rss',
             
-            # BÓNG ĐÁ QUỐC TẾ - TIẾNG ANH
+            # Bao Quoc Te
+            'https://feeds.reuters.com/reuters/topNews',
+            'https://feeds.reuters.com/reuters/worldNews',
+            'https://feeds.reuters.com/reuters/businessNews',
+            'https://feeds.reuters.com/reuters/technologyNews',
+            'https://feeds.reuters.com/reuters/scienceNews',
+            
+            'https://rss.cnn.com/rss/edition.rss',
+            'https://rss.cnn.com/rss/edition_world.rss',
+            'https://rss.cnn.com/rss/edition_business.rss',
+            'https://rss.cnn.com/rss/edition_technology.rss',
+            
+            'https://feeds.bbci.co.uk/news/rss.xml',
+            'https://feeds.bbci.co.uk/news/world/rss.xml',
+            'https://feeds.bbci.co.uk/news/business/rss.xml',
+            'https://feeds.bbci.co.uk/news/technology/rss.xml',
+            'https://feeds.bbci.co.uk/news/science_and_environment.rss.xml',
+            
+            'https://www.theguardian.com/international/rss',
+            'https://www.theguardian.com/world/rss',
+            'https://www.theguardian.com/business.rss',
+            'https://www.theguardian.com/technology.rss',
+            'https://www.theguardian.com/science.rss',
+            
+            'https://apnews.com/apf-topnews?format=xml',
+            'https://apnews.com/apf-worldnews?format=xml',
+            'https://apnews.com/apf-business?format=xml',
+            'https://apnews.com/apf-technology?format=xml',
+            
+            # The Thao Quoc Te
             'https://www.espn.com/espn/rss/soccer/news',
-            'https://www.skysports.com/rss/12040',
-            'https://www.skysports.com/rss/12088',
             'https://www.goal.com/feeds/en/news',
-            'https://www.bbc.co.uk/sport/football/rss.xml',
-            
-            # THỂ THAO KHÁC NGOÀI BÓNG ĐÁ - TIẾNG ANH
-            'https://www.espn.com/espn/rss/news',
             'https://www.espn.com/espn/rss/nba/news',
-            'https://www.espn.com/espn/rss/nfl/news',
+            'https://www.espn.com/espn/rss/nfl/news', 
             'https://www.espn.com/espn/rss/mlb/news',
             'https://www.espn.com/espn/rss/nhl/news',
             'https://www.espn.com/espn/rss/tennis/news',
-            'https://www.bbc.co.uk/sport/rss.xml',
-            'https://www.skysports.com/rss/12040',
-            'https://www.skysports.com/rss/12059',  # Tennis
+            'https://www.espn.com/espn/rss/golf/news',
+            'https://www.espn.com/espn/rss/racing/news',
+
+            'https://www.skysports.com/rss/12040',  # Football
+            'https://www.skysports.com/rss/12036',  # Cricket
+            'https://www.skysports.com/rss/12148',  # F1
+            'https://www.skysports.com/rss/12150',  # Rugby
+            'https://www.skysports.com/rss/12158',  # Golf
+            'https://www.skysports.com/rss/12154',  # Tennis
+            'https://www.skysports.com/rss/12156',  # Boxing
+            'https://www.eurosport.com/rss.xml',
+
+            # Thể thao chuyên ngành
+            'https://www.atptour.com/en/-/media/rss-feeds/feed-news.aspx',  # Tennis
+            'https://www.wtatennis.com/rss/news',  # Tennis nữ
+            'https://www.pgatour.com/rss/news.rss',  # Golf
+            'https://www.formula1.com/content/fom-website/en/latest/all.rss',  # F1
+            'https://www.fiba.basketball/rss',  # Basketball
+            'https://www.icc-cricket.com/rss/news',  # Cricket
             
-            # GIẢI TRÍ TIẾNG ANH
-            'https://feeds.reuters.com/reuters/entertainment',
-            'https://rss.cnn.com/rss/edition_entertainment.rss',
-            'https://www.theguardian.com/uk/culture/rss',
-            
-            # DU LỊCH - TIẾNG ANH (THAY THẾ CHÍNH TRỊ)
-            'https://feeds.reuters.com/reuters/lifestyle',
-            'https://rss.cnn.com/rss/edition_travel.rss',
-            'https://www.theguardian.com/uk/travel/rss',
-            'https://www.nationalgeographic.com/travel/feed/',
-            'https://www.lonelyplanet.com/news/feed/',
-            'https://www.travelandleisure.com/rss/all.xml',
-            
-            # INTERNATIONAL NEWS TỔNG HỢP (CÁC NGUỒN DỄ TRUY CẬP)
-            'https://feeds.reuters.com/reuters/topNews',
-            'https://rss.cnn.com/rss/edition.rss',
-            'https://www.aljazeera.com/xml/rss/all.xml',
-            'https://www.theguardian.com/international/rss',
-            'https://feeds.bbci.co.uk/news/rss.xml',
-            'https://www.npr.org/rss/rss.php?id=1001'
+            # Cong Nghe & Khoa Hoc
+            'https://techcrunch.com/feed/',
+            'https://www.theverge.com/rss/index.xml',
+            'https://www.wired.com/feed/rss',
+            'https://feeds.arstechnica.com/arstechnica/index',
+            'https://www.nature.com/subjects/news.rss',
+
+            # Bong da Quoc Te - Chuyen sau
+            'https://www.premierleague.com/rss',  # Premier League chinh thong
+            'https://www.laliga.com/rss',  # La Liga chinh thong
+            'https://www.bundesliga.com/rss',  # Bundesliga chinh thong
+            'https://www.legaseriea.it/en/rss',  # Serie A chinh thong
+            'https://www.ligue1.com/rss',  # Ligue 1 chinh thong
+
+            # Cac website bong da noi tieng
+            'https://www.transfermarkt.com/rss/news',
+            'https://www.90min.com/feeds/rss',
+            'https://www.fourfourtwo.com/news/rss',
+            'https://www.squawka.com/news/feed/',
+            'https://www.planetfootball.com/feed/',
+            'https://www.football365.com/rss',
+
+            # Tin tuc bong da tu cac newspaper lon
+            'https://www.dailymail.co.uk/sport/football/index.rss',
+            'https://www.mirror.co.uk/sport/football/rss.xml',
+            'https://www.thesun.co.uk/sport/football/feed/',
+            'https://www.independent.co.uk/sport/football/rss',
+
+            # Tin chuyen nhuong
+            'https://www.football-italia.net/feed',
+            'https://www.getfootballnewsgermany.com/feed/',
+            'https://www.football-espana.net/feed'
+
+            # The gioi dong vat & Khoa hoc Tu nhien
+            'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',  # BBC Science
+            'https://www.theguardian.com/science/rss',  # Guardian Science
+            'https://apnews.com/apf-science?format=xml',  # AP Science
+
+            # Dong vat & Thien nhien
+            'https://www.bbc.com/earth/rss.xml',  # BBC Earth
+            'https://www.earthtouchnews.com/feed/',  # Earth Touch News
+            'https://www.worldwildlife.org/rss',  # WWF (thêm vào cho đa dạng)
+            'https://www.nationalgeographic.com/rss/animals',  # National Geographic Animals (thêm)
+
+            # Khoa hoc & Khám phá
+            'https://www.science.org/rss/news_current.xml',  # Science Magazine
+            'https://www.newscientist.com/section/news/feed/',  # New Scientist
+            'https://phys.org/rss-feed/',  # Phys.org
+
+            # Bao ton & Moi truong
+            'https://www.conservation.org/rss',  # Conservation International
+            'https://www.greenpeace.org/international/rss/',  # Greenpeace
+
+            # Khoa hoc Vu tru & Thien van
+            'https://www.space.com/feeds/all',  # Space.com
+            'https://www.nasa.gov/rss/dyn/breaking_news.rss',  # NASA News
+            'https://www.esa.int/rssfeed/Our_Activities',  # European Space Agency
+            'https://www.skyandtelescope.com/feed/',  # Sky & Telescope
+
+            # Khoa hoc Doi song
+            'https://www.sciencedaily.com/rss/top/science.xml',  # Science Daily Top
+            'https://www.livescience.com/feeds/all',  # Live Science
+            'https://www.sciencenews.org/feed',  # Science News
+            'https://www.discovermagazine.com/rss',  # Discover Magazine
         ]
         
         all_articles = []
@@ -127,40 +219,86 @@ class ArticleCrawler:
         
         print(f"Bắt đầu crawl từ {len(rss_feeds)} nguồn RSS...")
         
-        # Định nghĩa số bài tối đa cho từng loại chuyên mục - TĂNG GIỚI HẠN
+        # Định nghĩa số bài tối đa cho từng loại chuyên mục
         category_limits = {
-            # CÁC CHUYÊN MỤC ÍT QUAN TRỌNG: 8-10 bài/feed
-            'Sức khỏe': 8,
-            'Kinh doanh': 8, 
-            'Đời sống': 8,
-            'Giáo dục': 8,
-            'Kinh tế': 8,
-            'Văn hóa': 8,
-            'Giới trẻ': 8,
+            # CÁC CHUYÊN MỤC ÍT QUAN TRỌNG: 30-50 bài/feed
+            'Sức khỏe': 50,
+            'Kinh doanh': 50, 
+            'Đời sống': 50,
+            'Giáo dục': 50,
+            'Kinh tế': 50,
+            'Văn hóa': 50,
+            'Giới trẻ': 50,
+            'Pháp luật': 30,
+            'Khoa học': 50,
+            'Số hóa': 50,
+            'Xe': 50,
             
-            # CÁC CHUYÊN MỤC QUAN TRỌNG: 15-25 bài/feed
-            'Thể thao': 20,
-            'Bóng đá': 20,
-            'Bóng đá quốc tế': 20,
-            'Tin mới nhất': 20,
-            'Thời sự': 20,
-            'Thế giới': 20,
-            'Công nghệ': 15,
-            'Số hóa': 15,
-            'Giải trí': 15,
-            'Pháp luật': 15,
-            'Khoa học': 15,
-            'Xe': 15,
-            'Du lịch': 20,  # TĂNG GIỚI HẠN CHO DU LỊCH
+            # CÁC CHUYÊN MỤC QUAN TRỌNG: 70-100 bài/feed
+            'Thể thao': 100,
+            'Bóng đá': 100,
+            'Bóng đá quốc tế': 100,
+            'Bóng đá Việt Nam': 80,
+            'Tin mới nhất': 80,
+            'Thời sự': 100,
+            'Thế giới': 100,
+            'Công nghệ': 70,
+            'Giải trí': 70,
+            'Du lịch': 70,
+            'Thị trường': 70,
+
+            # BÓNG ĐÁ QUỐC TẾ - GIẢI ĐẤU: 80-120 bài/feed
+            'Premier League': 120,
+            'La Liga': 100,
+            'Bundesliga': 100,
+            'Serie A': 100,
+            'Ligue 1': 100,
+            'Champions League': 80,
+            'Europa League': 80,
+            'World Cup': 80,
+            'Chuyển nhượng': 60,
+
+            # THỂ THAO QUỐC TẾ - MÔN THỂ THAO: 60-100 bài/feed
+            'Bóng rổ': 80,
+            'Bóng bầu dục Mỹ': 60,
+            'Bóng chày': 60,
+            'Khúc côn cầu': 60,
+            'Tennis': 80,
+            'Golf': 60,
+            'Đua xe': 60,
+            'Formula 1': 70,
+            'Cricket': 60,
+            'Bóng bầu dục': 60,
+            'Quyền anh': 50,
+            'Đua xe đạp': 50,
             
-            # INTERNATIONAL NEWS: 15-20 bài/feed
-            'International News': 20,
-            'World News': 20,
-            'Top Stories': 20,
-            'Entertainment': 15,
-            'Sports': 20,
-            'Lifestyle': 15,
-            'Travel': 15
+            # INTERNATIONAL NEWS: 70-120 bài/feed
+            'International News': 120,
+            'World News': 120,
+            'Top Stories': 100,
+            'Business News': 100,
+            'Technology News': 100,
+            'Science News': 100,
+            'Sports': 120,
+            'Soccer': 120,
+            'Football': 120,
+
+            # TIN QUỐC TẾ TỔNG HỢP: 80-100 bài/feed
+            'Tin quốc tế': 100,
+            'Tin nổi bật': 100,
+
+            # THIÊN NHIÊN & KHOA HỌC: 30-70 bài/feed
+            'Động vật': 50,
+            'Thiên nhiên': 40,
+            'Môi trường': 35,
+            'Khoa học & Môi trường': 45,
+            'Khoa học': 70,
+            'Bảo tồn': 30,
+            'Khám phá vũ trụ': 40,
+            'Thiên văn': 30,
+            'Khoa học đời sống': 50,
+            'Tin khoa học': 60,
+            'Khám phá': 40
         }
         
         # Crawl từng feed với giới hạn khác nhau
@@ -170,7 +308,7 @@ class ArticleCrawler:
 
             category = self._extract_category(feed_url)
             language = self._extract_language(feed_url)
-            limit = category_limits.get(category, 12)  # Mặc định 12 bài
+            limit = category_limits.get(category, 50)
             
             print(f"Đang crawl {category} [{language}] (tối đa {limit} bài)...")
 
@@ -208,7 +346,7 @@ class ArticleCrawler:
                         if len(all_articles) % 10 == 0:
                             print(f"Đã crawl {len(all_articles)}/{max_articles} bài báo...")
                     
-                    time.sleep(0.03)  # Giảm thời gian chờ để crawl nhanh hơn
+                    time.sleep(0.03)
                         
             except Exception as e:
                 print(f"Lỗi với feed {feed_url}: {e}")
@@ -237,42 +375,82 @@ class ArticleCrawler:
             'cong-nghe': 'Công nghệ',
             'xa-hoi': 'Xã hội',
             'kinh-te': 'Kinh tế',
-            'bong-da': 'Bóng đá',
-            'bong-da-quoc-te': 'Bóng đá quốc tế',
-            'van-hoa': 'Văn hóa',
-            'gioi-tre': 'Giới trẻ',
-            'nhip-song-tre': 'Giới trẻ',
+            'thi-truong': 'Thị trường',
             
-            # TIẾNG ANH - THỂ THAO
+            # BÓNG ĐÁ VIỆT NAM
+            'bong-da': 'Bóng đá',
+            'bong-da-viet-nam': 'Bóng đá Việt Nam',
+            'bong-da-quoc-te': 'Bóng đá quốc tế',
+            'tin-bong-da': 'Bóng đá',
+            
+            # BÓNG ĐÁ QUỐC TẾ - GIẢI ĐẤU
+            'premierleague': 'Premier League',
+            'laliga': 'La Liga',
+            'bundesliga': 'Bundesliga', 
+            'seriea': 'Serie A',
+            'ligue1': 'Ligue 1',
+            'championsleague': 'Champions League',
+            'europaleague': 'Europa League',
+            'worldcup': 'World Cup',
+            
+            # BÓNG ĐÁ QUỐC TẾ - WEBSITE
+            'transfermarkt': 'Chuyển nhượng',
+            '90min': 'Bóng đá',
+            'fourfourtwo': 'Bóng đá',
+            'squawka': 'Bóng đá',
+            'planetfootball': 'Bóng đá',
+            'football365': 'Bóng đá',
+            'football-italia': 'Serie A',
+            'football-espana': 'La Liga',
+            'getfootballnewsgermany': 'Bundesliga',
+            
+            # THỂ THAO QUỐC TẾ - TỔNG HỢP
             'soccer': 'Bóng đá',
             'football': 'Bóng đá',
-            'premierleague': 'Bóng đá',
-            'laliga': 'Bóng đá',
-            'bundesliga': 'Bóng đá',
-            'seriea': 'Bóng đá',
-            'ligue1': 'Bóng đá',
-            'transfermarkt': 'Bóng đá',
+            'sportsnews': 'Thể thao',
+            'sport': 'Thể thao',
             'sports': 'Thể thao',
-            'nba': 'Thể thao',
-            'nfl': 'Thể thao', 
-            'mlb': 'Thể thao',
-            'nhl': 'Thể thao',
-            'tennis': 'Thể thao',
-            'cricket': 'Thể thao',
             
-            # TIẾNG ANH - GIẢI TRÍ & DU LỊCH
-            'entertainment': 'Giải trí',
-            'culture': 'Giải trí',
-            'arts': 'Giải trí',
-            'lifestyle': 'Lifestyle',
-            'travel': 'Du lịch',
+            # THỂ THAO QUỐC TẾ - MÔN THỂ THAO
+            'tennis': 'Tennis',
+            'golf': 'Golf',
+            'racing': 'Đua xe',
+            'formula-1': 'Formula 1',
+            'f1': 'Formula 1',
+            'cricket': 'Cricket',
+            'rugby': 'Bóng bầu dục',
+            'boxing': 'Quyền anh',
+            'cycling': 'Đua xe đạp',
+            'basketball': 'Bóng rổ',
+            'fiba': 'Bóng rổ',
+            'wtatennis': 'Tennis',
+            'atptour': 'Tennis',
+            'pgatour': 'Golf',
+            'icc-cricket': 'Cricket',
+            
+            # CÔNG NGHỆ & KHOA HỌC
+            'tech': 'Công nghệ',
+            'technology': 'Công nghệ',
+            'science': 'Khoa học',
+            'science_and_environment': 'Khoa học',
+            'breaking_news': 'Tin mới nhất',
             
             # TIẾNG ANH - NEWS TỔNG HỢP
-            'topnews': 'International News',
-            'topstories': 'Top Stories',
-            'edition': 'International News',
-            'international': 'International News',
-            'world': 'World News'
+            'topnews': 'Tin nổi bật',
+            'worldnews': 'Thế giới',
+            'businessnews': 'Kinh doanh',
+            'technologynews': 'Công nghệ',
+            'sciencenews': 'Khoa học',
+            'edition': 'Tin quốc tế',
+            'edition_world': 'Thế giới',
+            'edition_business': 'Kinh doanh',
+            'edition_technology': 'Công nghệ',
+            'edition_sport': 'Thể thao',
+            'international': 'Tin quốc tế',
+            'world': 'Thế giới',
+            'business': 'Kinh doanh',
+            'technology': 'Công nghệ',
+            'science': 'Khoa học'
         }
         
         for key, value in categories.items():
@@ -281,19 +459,28 @@ class ArticleCrawler:
         
         # Mặc định cho các feed không xác định
         if 'news' in feed_url.lower():
-            return 'International News'
+            return 'Tin quốc tế'
         elif 'rss' in feed_url.lower():
             return 'Tin mới nhất'
         else:
             return 'Thế giới'
-    
+
     def _extract_language(self, feed_url):
         """Phân loại ngôn ngữ"""
         vietnamese_domains = ['vnexpress', 'dantri', 'thanhnien', 'tuoitre', '24h', 'bongdaplus', 
-                             'webthethao', 'thethao247', 'laodong', 'vietnamnet', 'zingnews']
-        english_domains = ['espn', 'skysports', 'goal', 'bbc', 'theguardian', 
-                          'reuters', 'cnn', 'aljazeera', 'npr', 'nationalgeographic',
-                          'lonelyplanet', 'travelandleisure']
+                            'webthethao', 'thethao247', 'laodong', 'vietnamnet', 'zingnews',
+                            'cafef', 'vtv']
+        english_domains = ['espn', 'skysports', 'goal', 'eurosport', 'bbc', 'theguardian', 
+                        'reuters', 'cnn', 'apnews', 'techcrunch', 'theverge', 'wired',
+                        'arstechnica', 'nasa', 'nature', 'premierleague', 'laliga', 'bundesliga',
+                        'legaseriea', 'ligue1', 'transfermarkt', '90min', 'fourfourtwo', 'squawka',
+                        'planetfootball', 'football365', 'dailymail', 'mirror', 'thesun', 'independent',
+                        'fifa', 'uefa', 'nba', 'nfl', 'mlb', 'nhl', 'atptour', 'wtatennis', 'pgatour',
+                        'formula1', 'fiba', 'icc-cricket', 'football-italia', 'getfootballnewsgermany',
+                        'football-espana', 'science.org', 'newscientist', 'phys.org', 'space.com',
+                        'esa.int', 'skyandtelescope', 'sciencedaily', 'livescience', 'sciencenews',
+                        'discovermagazine', 'nationalgeographic', 'earthtouchnews', 'worldwildlife',
+                        'conservation', 'greenpeace']
         
         if any(domain in feed_url for domain in vietnamese_domains):
             return 'Vietnamese'
@@ -301,9 +488,10 @@ class ArticleCrawler:
             return 'English'
         else:
             return 'Other'
-    
+
     def _extract_source(self, feed_url):
         sources = {
+            # BÁO VIỆT NAM
             'vnexpress': 'VnExpress',
             'dantri': 'Dân Trí',
             'thanhnien': 'Thanh Niên',
@@ -315,24 +503,104 @@ class ArticleCrawler:
             'laodong': 'Lao Động',
             'vietnamnet': 'VietnamNet',
             'zingnews': 'ZingNews',
+            'cafef': 'Cafef',
+            'vtv': 'VTV',
             
+            # THỂ THAO QUỐC TẾ - TỔNG HỢP
             'espn': 'ESPN',
             'skysports': 'Sky Sports',
             'goal': 'Goal.com',
-            'bbc': 'BBC',
-            'theguardian': 'The Guardian',
+            'eurosport': 'Eurosport',
             'reuters': 'Reuters',
             'cnn': 'CNN',
-            'aljazeera': 'Al Jazeera',
-            'npr': 'NPR',
+            'bbc': 'BBC',
+            'theguardian': 'The Guardian',
+            'apnews': 'Associated Press',
+            
+            # GIẢI ĐẤU BÓNG ĐÁ CHÍNH THỐNG
+            'premierleague': 'Premier League',
+            'laliga': 'La Liga',
+            'bundesliga': 'Bundesliga',
+            'legaseriea': 'Serie A', 
+            'ligue1': 'Ligue 1',
+            
+            # WEBSITE BÓNG ĐÁ
+            'transfermarkt': 'Transfermarkt',
+            '90min': '90min',
+            'fourfourtwo': 'FourFourTwo',
+            'squawka': 'Squawka',
+            'planetfootball': 'Planet Football',
+            'football365': 'Football365',
+            'football-italia': 'Football Italia',
+            'getfootballnewsgermany': 'Get German Football News',
+            'football-espana': 'Football Espana',
+            
+            # NEWSPAPERS ANH
+            'dailymail': 'Daily Mail',
+            'mirror': 'Daily Mirror',
+            'thesun': 'The Sun',
+            'independent': 'The Independent',
+            
+            # THỂ THAO CHUYÊN NGÀNH
+            'atptour': 'ATP Tour',
+            'wtatennis': 'WTA Tennis',
+            'pgatour': 'PGA Tour',
+            'formula1': 'Formula 1',
+            'fiba': 'FIBA Basketball',
+            'icc-cricket': 'ICC Cricket',
+            
+            # CÔNG NGHỆ & KHOA HỌC
+            'techcrunch': 'TechCrunch',
+            'theverge': 'The Verge',
+            'wired': 'Wired',
+            'arstechnica': 'Ars Technica',
+            'nasa': 'NASA',
+            'nature': 'Nature',
+
+            # THẾ GIỚI ĐỘNG VẬT & THIÊN NHIÊN
             'nationalgeographic': 'National Geographic',
-            'lonelyplanet': 'Lonely Planet',
-            'travelandleisure': 'Travel + Leisure'
+            'bbcearth': 'BBC Earth',
+            'earthtouchnews': 'Earth Touch News',
+            'worldwildlife': 'WWF',
+            
+            # KHOA HỌC
+            'science.org': 'Science Magazine',
+            'newscientist': 'New Scientist',
+            'phys.org': 'Phys.org',
+            'sciencedaily': 'Science Daily',
+            
+            # BẢO TỒN & MÔI TRƯỜNG
+            'conservation': 'Conservation International',
+            'greenpeace': 'Greenpeace',
+            
+            # KHOA HỌC VŨ TRỤ
+            'space.com': 'Space.com',
+            'nasa': 'NASA',
+            'esa.int': 'European Space Agency',
+            'skyandtelescope': 'Sky & Telescope',
+            
+            # KHOA HỌC ĐỜI SỐNG
+            'livescience': 'Live Science',
+            'sciencenews': 'Science News',
+            'discovermagazine': 'Discover Magazine'
         }
+        
+        # Xử lý các domain phức tạp
+        if 'feeds.reuters.com' in feed_url:
+            return 'Reuters'
+        elif 'feeds.bbci.co.uk' in feed_url:
+            return 'BBC'
+        elif 'rss.cnn.com' in feed_url:
+            return 'CNN'
+        elif 'apf-science' in feed_url:
+            return 'Associated Press'
+        elif 'science_and_environment' in feed_url:
+            return 'BBC Science'
         
         for domain, source in sources.items():
             if domain in feed_url:
                 return source
+        
         return 'Other'
     
     def save_articles(self, articles, filename='vn_articles.json'):
@@ -411,9 +679,9 @@ def main():
     crawler = ArticleCrawler()
     
     try:
-        max_articles = int(input("Số bài báo muốn crawl (mặc định 1000): ").strip() or "1000")
+        max_articles = int(input("Số bài báo muốn crawl (mặc định 5000): ").strip() or "10000")
     except:
-        max_articles = 1000
+        max_articles = 10000
     
     articles = crawler.crawl_vnexpress_rss(max_articles=max_articles, verbose=False)
     
