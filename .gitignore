@@ -23,17 +23,17 @@ pip-selfcheck.json
 article_data/
 # Thư mục index HNSW  
 article_index/
-# File dữ liệu lớn
-*.json
-*.npy
-*.npz
-*.bin
-*.pkl
-*.pickle
-*.h5
-*.hdf5
-*.model
-*.weights
+# File dữ liệu lớn - CHỈ ignore trong thư mục data
+data/*.json
+data/*.npy
+data/*.npz
+data/*.bin
+data/*.pkl
+data/*.pickle
+data/*.h5
+data/*.hdf5
+data/*.model
+data/*.weights
 
 # ===========================================
 # LOGS VÀ TEMP FILES
@@ -109,4 +109,14 @@ build/
 .env
 .venv
 .env.local
-.env.production 
+.env.production
+
+# ===========================================
+# CUSTOM RULES FOR YOUR PROJECT
+# ===========================================
+# CHO PHÉP: src/templates/ chứa file JSON
+# !src/templates/*.json
+
+# Upload ảnh và assets nhỏ
+uploads/
+temp_uploads/
