@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Search Engine</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .logo-icon {
+            font-size: 2.5rem;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 2.5rem;
+            font-weight: 500;
+            color: white;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 5px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            transition: box-shadow 0.3s;
+        }
+
+        .search-container:focus-within {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .search-icon {
+            padding: 0 15px;
+            color: #5f6368;
+        }
+
+        #query {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 15px 0;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .search-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 12px 24px;
+            margin: 5px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .search-btn:hover {
+            background: #0d62d9;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            min-height: 200px;
+        }
+
+        .results-header {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e8eaed;
+            color: #1a73e8;
+            font-weight: 500;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1a73e8;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #1a73e8;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+            line-height: 1.4;
+        }
+
+        .card p {
+            margin-bottom: 8px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .meta-info {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #5f6368;
+        }
+
+        .meta-info span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .similarity {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: white;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #5f6368;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #dadce0;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .logo-text {
+                font-size: 2rem;
+            }
+            
+            .search-container {
+                flex-direction: column;
+                border-radius: 12px;
+                padding: 15px;
+            }
+            
+            #query {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .search-btn {
+                width: 100%;
+                border-radius: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-search logo-icon"></i>
+                <h1 class="logo-text">Article Search</h1>
+            </div>
+            <p class="tagline">Tìm kiếm bài viết một cách thông minh</p>
+        </div>
+
+        <div class="search-container">
+            <div class="search-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <input id="query" type="text" placeholder="Nhập từ khoá tìm kiếm...">
+            <button class="search-btn" onclick="doSearch()">Tìm kiếm</button>
+        </div>
+
+        <div class="results-container">
+            <h3 class="results-header">Kết quả tìm kiếm</h3>
+            <div id="results">
+                <div class="empty-state">
+                    <i class="fas fa-newspaper"></i>
+                    <p>Nhập từ khoá và nhấn Tìm kiếm để xem kết quả</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2025 Article Search Engine</p>
+        </div>
+    </div>
+
+    <script>
+        async function doSearch() {
+            const q = document.getElementById("query").value.trim();
+            
+            if (!q) {
+                alert("Vui lòng nhập từ khoá tìm kiếm!");
+                return;
+            }
+            
+            // Hiển thị trạng thái đang tải
+            document.getElementById("results").innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Đang tìm kiếm...</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch("/search", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ query: q, topk: 10 })
+                });
+
+                const data = await response.json();
+                
+                let html = "";
+                
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(r => {
+                        html += `
+                            <div class="card">
+                                <h2>${r.title}</h2>
+                                <div class="meta-info">
+                                    <span><i class="fas fa-newspaper"></i> ${r.source}</span>
+                                    <span><i class="fas fa-tag"></i> ${r.category}</span>
+                                </div>
+                                <p>${r.summary}</p>
+                                <span class="similarity">Độ tương đồng: ${r.similarity.toFixed(4)}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = `
+                        <div class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <p>Không tìm thấy kết quả nào cho "${q}"</p>
+                            <p>Hãy thử với từ khoá khác hoặc kiểm tra chính tả</p>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById("results").innerHTML = html;
+            } catch (error) {
+                document.getElementById("results").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Đã xảy ra lỗi khi tìm kiếm. Vui lòng thử lại sau.</p>
+                    </div>
+                `;
+                console.error("Search error:", error);
+            }
+        }
+        
+        // Cho phép tìm kiếm bằng phím Enter
+        document.getElementById("query").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                doSearch();
+            }
+        });
+    </script>
+</body>
+</html>
