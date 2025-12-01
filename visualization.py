@@ -1,7 +1,7 @@
 # ==============================================================================
 # BƯỚC 1: CÀI ĐẶT & IMPORT
 # ==============================================================================
-
+#!pip install hnswlib scikit-learn --upgrade -q
 import numpy as np
 import matplotlib.pyplot as plt
 import time
