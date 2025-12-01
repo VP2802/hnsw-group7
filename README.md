@@ -8,13 +8,13 @@ Dự án này triển khai một công cụ tìm kiếm bài báo sử dụng HN
 project/
 ├── templates/
 │   └── index.html
+|   ├── sript.js
 ├── article_embedder.py
 ├── article_search_system.py
 ├── crawl_articles.py
 ├── hnsw_manager.py
 ├── graph.py
 ├── server.py
-├── script.js
 ├── requirements.txt
 └── README.md
 ```
