@@ -1,5 +1,5 @@
 feedparser==6.0.10
-requests==2.31.0
+requests>=2.32.4
 numpy
 sentence-transformers==2.2.2
 hnswlib==0.7.0
