@@ -17,7 +17,6 @@ project/
 ├── server.py
 ├── merge_article_index.py
 ├── update_data_summary.py
-├── requirements.txt
 └── README.md
 ```
 
@@ -34,7 +33,16 @@ project/
 1. Cài các thư viện cần thiết:
 
 ```
-pip install -r requirements.txt
+!pip install feedparser==6.0.10
+!pip install requests==2.32.4
+!pip install huggingface_hub>=0.24.0
+!pip install sentence-transformers>=3.0.0
+!pip install hnswlib==0.7
+!pip install "fastapi>=0.115.2,<1.0"
+!pip install "starlette>=0.49.1,<1.0"
+!pip install "anyio>=4.9.0,<5.0"
+!pip install "uvicorn>=0.34.0,<1.0"
+!pip install python-multipart>=0.0.18
 ```
 
 2. Đảm bảo cấu trúc thư mục giống như ở trên.
