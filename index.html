@@ -1,326 +1,373 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Article Search Engine</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Article Search Engine</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; }
+    body { background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%); color:#333; min-height:100vh; padding: 20px; }
+    .container { max-width: 920px; margin: 0 auto; padding: 20px; }
 
-        body {
-            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
-            color: #333;
-            min-height: 100vh;
-            padding: 20px;
-        }
+    .header { text-align:center; margin-bottom: 26px; color:white; }
+    .logo { display:flex; align-items:center; justify-content:center; gap: 14px; margin-bottom: 6px; }
+    .logo-icon { font-size: 2.4rem; color:white; }
+    .logo-text { font-size: 2.4rem; font-weight: 600; color:white; }
+    .tagline { font-size: 1.08rem; opacity: 0.92; }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+    .search-panel { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 18px; padding: 14px; margin-bottom: 18px; backdrop-filter: blur(6px); }
+    .search-row { display:flex; gap: 12px; align-items:center; }
+    .search-box {
+      flex: 1; background:white; border-radius: 999px; padding: 10px 14px; display:flex; align-items:center; gap: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+    }
+    .search-icon { color:#5f6368; }
+    #query { flex:1; border:none; outline:none; font-size: 1.08rem; padding: 6px 0; color:#333; }
+    .search-btn {
+      background:#1a73e8; color:white; border:none; border-radius: 999px;
+      padding: 12px 20px; font-size: 1rem; font-weight: 700; cursor:pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+    }
+    .search-btn:hover { background:#0d62d9; }
 
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            color: white;
-        }
+    .controls-row { display:flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+    .control {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display:flex; align-items:center; gap: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    }
+    .control i { color:#1a73e8; }
+    .control span { color:#3c4043; font-weight: 700; font-size: 0.92rem; }
+    .control select {
+      border: none; outline: none; background: transparent; font-weight: 700; color:#1a73e8;
+      padding: 4px 6px; cursor:pointer;
+    }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 10px;
-        }
+    .history {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+      margin-top: 10px;
+      display: none;
+    }
+    .history-header { display:flex; justify-content: space-between; align-items:center; margin: 8px 2px; color:#5f6368; font-size: 0.9rem; }
+    .history-clear { cursor:pointer; color:#1a73e8; user-select:none; }
+    .history-items { display:flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      background:#e8f0fe; color:#1a73e8; border: 1px solid rgba(26,115,232,0.25);
+      padding: 6px 10px; border-radius: 999px; font-size: 0.92rem;
+      cursor:pointer;
+    }
+    .chip:hover { filter: brightness(0.98); }
 
-        .logo-icon {
-            font-size: 2.5rem;
-            color: white;
-        }
+    .results-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 20px; min-height: 220px; }
+    .results-header { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e8eaed; color:#1a73e8; font-weight: 700; display:flex; justify-content: space-between; align-items:center; }
+    .results-sub { color:#5f6368; font-weight: 500; font-size: 0.92rem; }
 
-        .logo-text {
-            font-size: 2.5rem;
-            font-weight: 500;
-            color: white;
-        }
+    .card { background:#f8f9fa; border-radius: 10px; padding: 18px; margin-bottom: 16px; border-left: 5px solid #1a73e8; transition: transform 0.15s, box-shadow 0.15s; }
+    .card:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+    .card h2 { color:#1a73e8; margin-bottom: 8px; font-size: 1.25rem; line-height: 1.35; }
+    .card p { margin-top: 8px; margin-bottom: 0; color:#555; line-height: 1.6; }
 
-        .tagline {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 10px;
-        }
+    .meta-info { display:flex; flex-wrap: wrap; gap: 14px; margin-top: 4px; color:#5f6368; font-size: 0.92rem; }
+    .meta-info span { display:flex; align-items:center; gap: 6px; }
+    .meta-info a { color:#1a73e8; text-decoration:none; font-weight: 600; }
+    .meta-info a:hover { text-decoration: underline; }
 
-        .search-container {
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 5px;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            transition: box-shadow 0.3s;
-        }
+    .badge { display:inline-block; background:#e8f0fe; color:#1a73e8; padding: 5px 10px; border-radius: 999px; font-size: 0.85rem; font-weight: 700; margin-top: 12px; }
 
-        .search-container:focus-within {
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-        }
+    .empty-state { text-align:center; padding: 38px 18px; color:#5f6368; }
+    .empty-state i { font-size: 3rem; margin-bottom: 12px; color:#dadce0; }
+    .error-state { text-align:center; padding: 18px; background:#ffeaa7; border-radius: 10px; margin-bottom: 16px; color:#e17055; }
 
-        .search-icon {
-            padding: 0 15px;
-            color: #5f6368;
-        }
+    .footer { text-align:center; margin-top: 26px; color:white; font-size: 0.9rem; opacity: 0.85; }
 
-        #query {
-            flex: 1;
-            border: none;
-            outline: none;
-            padding: 15px 0;
-            font-size: 1.1rem;
-            color: #333;
-        }
-
-        .search-btn {
-            background: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            padding: 12px 24px;
-            margin: 5px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .search-btn:hover {
-            background: #0d62d9;
-        }
-
-        .results-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            min-height: 200px;
-        }
-
-        .results-header {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e8eaed;
-            color: #1a73e8;
-            font-weight: 500;
-        }
-
-        .card {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-left: 4px solid #1a73e8;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .card h2 {
-            color: #1a73e8;
-            margin-bottom: 10px;
-            font-size: 1.3rem;
-            line-height: 1.4;
-        }
-
-        .card p {
-            margin-bottom: 8px;
-            color: #555;
-            line-height: 1.5;
-        }
-
-        .meta-info {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            color: #5f6368;
-        }
-
-        .meta-info span {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .similarity {
-            display: inline-block;
-            background: #e8f0fe;
-            color: #1a73e8;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-top: 10px;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            color: white;
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #5f6368;
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #dadce0;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .logo-text {
-                font-size: 2rem;
-            }
-            
-            .search-container {
-                flex-direction: column;
-                border-radius: 12px;
-                padding: 15px;
-            }
-            
-            #query {
-                width: 100%;
-                margin-bottom: 10px;
-            }
-            
-            .search-btn {
-                width: 100%;
-                border-radius: 8px;
-            }
-        }
-    </style>
+    @media (max-width: 700px) {
+      .container { padding: 10px; }
+      .search-row { flex-direction: column; align-items: stretch; }
+      .search-btn { width: 100%; border-radius: 14px; }
+      .search-box { border-radius: 14px; }
+      .controls-row { gap: 8px; }
+      .control { width: 100%; justify-content: space-between; }
+    }
+  </style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <i class="fas fa-search logo-icon"></i>
-                <h1 class="logo-text">Article Search</h1>
-            </div>
-            <p class="tagline">Tìm kiếm bài viết một cách thông minh</p>
-        </div>
-
-        <div class="search-container">
-            <div class="search-icon">
-                <i class="fas fa-search"></i>
-            </div>
-            <input id="query" type="text" placeholder="Nhập từ khoá tìm kiếm...">
-            <button class="search-btn" onclick="doSearch()">Tìm kiếm</button>
-        </div>
-
-        <div class="results-container">
-            <h3 class="results-header">Kết quả tìm kiếm</h3>
-            <div id="results">
-                <div class="empty-state">
-                    <i class="fas fa-newspaper"></i>
-                    <p>Nhập từ khoá và nhấn Tìm kiếm để xem kết quả</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>© 2025 Article Search Engine</p>
-        </div>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <i class="fas fa-search logo-icon"></i>
+        <h1 class="logo-text">Article Search</h1>
+      </div>
+      <p class="tagline">Semantic • Keyword • Hybrid</p>
     </div>
 
-    <script>
-        async function doSearch() {
-            const q = document.getElementById("query").value.trim();
-            
-            if (!q) {
-                alert("Vui lòng nhập từ khoá tìm kiếm!");
-                return;
-            }
-            
-            // Hiển thị trạng thái đang tải
-            document.getElementById("results").innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Đang tìm kiếm...</p>
-                </div>
-            `;
-            
-            try {
-                const response = await fetch("/search", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ query: q, topk: 10 })
-                });
+    <div class="search-panel">
+      <div class="search-row">
+        <div class="search-box">
+          <i class="fas fa-search search-icon"></i>
+          <input id="query" type="text" placeholder="Nhập từ khoá tìm kiếm..." autocomplete="off" />
+        </div>
+        <button class="search-btn" onclick="doSearch()">Tìm kiếm</button>
+      </div>
 
-                const data = await response.json();
-                
-                let html = "";
-                
-                if (data.results && data.results.length > 0) {
-                    data.results.forEach(r => {
-                        html += `
-                            <div class="card">
-                                <h2>${r.title}</h2>
-                                <div class="meta-info">
-                                    <span><i class="fas fa-newspaper"></i> ${r.source}</span>
-                                    <span><i class="fas fa-tag"></i> ${r.category}</span>
-                                </div>
-                                <p>${r.summary}</p>
-                                <span class="similarity">Độ tương đồng: ${r.similarity.toFixed(4)}</span>
-                            </div>
-                        `;
-                    });
-                } else {
-                    html = `
-                        <div class="empty-state">
-                            <i class="fas fa-search"></i>
-                            <p>Không tìm thấy kết quả nào cho "${q}"</p>
-                            <p>Hãy thử với từ khoá khác hoặc kiểm tra chính tả</p>
-                        </div>
-                    `;
-                }
-                
-                document.getElementById("results").innerHTML = html;
-            } catch (error) {
-                document.getElementById("results").innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p>Đã xảy ra lỗi khi tìm kiếm. Vui lòng thử lại sau.</p>
-                    </div>
-                `;
-                console.error("Search error:", error);
-            }
-        }
-        
-        // Cho phép tìm kiếm bằng phím Enter
-        document.getElementById("query").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                doSearch();
-            }
+      <div class="controls-row">
+        <div class="control" title="Chế độ tìm kiếm">
+          <i class="fas fa-sliders"></i>
+          <span>Mode</span>
+          <select id="mode">
+            <option value="hybrid" selected>Hybrid</option>
+            <option value="semantic">Semantic</option>
+            <option value="keyword">Keyword</option>
+          </select>
+        </div>
+
+        <div class="control" title="Sắp xếp kết quả">
+          <i class="fas fa-sort"></i>
+          <span>Sort</span>
+          <select id="sort">
+            <option value="relevance" selected>Liên quan nhất</option>
+            <option value="newest">Mới nhất</option>
+          </select>
+        </div>
+
+        <div class="control" title="Số kết quả">
+          <i class="fas fa-list"></i>
+          <span>TopK</span>
+          <select id="topk">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="history" id="history">
+        <div class="history-header">
+          <span><i class="fas fa-clock"></i> Lịch sử tìm kiếm</span>
+          <span class="history-clear" onclick="clearHistory()">Xoá</span>
+        </div>
+        <div class="history-items" id="historyItems"></div>
+      </div>
+    </div>
+
+    <div class="results-container">
+      <div class="results-header">
+        <span>Kết quả tìm kiếm</span>
+        <span class="results-sub" id="resultsSub"></span>
+      </div>
+
+      <div id="results">
+        <div class="empty-state">
+          <i class="fas fa-newspaper"></i>
+          <p>Nhập từ khoá và nhấn Tìm kiếm để xem kết quả</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>© 2025 Article Search Engine.</p>
+    </div>
+  </div>
+
+  <script>
+    // ---------- util ----------
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return "";
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function isHttpUrl(u) {
+      return /^https?:\/\//i.test(String(u || ""));
+    }
+
+    // ---------- history ----------
+    const HISTORY_KEY = "article_search_history_v1";
+
+    function getHistory() {
+      try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function setHistory(arr) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0, 10)));
+    }
+
+    function addToHistory(q) {
+      const query = String(q || "").trim();
+      if (!query) return;
+      let h = getHistory();
+      h = h.filter(x => x !== query);
+      h.unshift(query);
+      setHistory(h);
+      renderHistory();
+    }
+
+    function clearHistory() {
+      localStorage.removeItem(HISTORY_KEY);
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const h = getHistory();
+      const box = document.getElementById("history");
+      const items = document.getElementById("historyItems");
+      if (!h.length) {
+        box.style.display = "none";
+        items.innerHTML = "";
+        return;
+      }
+      box.style.display = "block";
+      items.innerHTML = h
+        .map(q => `<span class="chip" onclick="useHistory(${JSON.stringify(q)})">${escapeHtml(q)}</span>`)
+        .join("");
+    }
+
+    function useHistory(q) {
+      document.getElementById("query").value = q;
+      doSearch();
+    }
+
+    // ---------- search ----------
+    let currentAbort = null;
+
+    async function doSearch() {
+      const q = document.getElementById("query").value.trim();
+      const mode = document.getElementById("mode").value;
+      const sort = document.getElementById("sort").value;
+      const topk = Number(document.getElementById("topk").value || 10);
+
+      if (!q) {
+        alert("Vui lòng nhập từ khoá tìm kiếm!");
+        return;
+      }
+
+      addToHistory(q);
+
+      // Abort previous request
+      if (currentAbort) currentAbort.abort();
+      currentAbort = new AbortController();
+
+      document.getElementById("resultsSub").textContent =
+        `Mode: ${mode} • Sort: ${sort} • TopK: ${topk} • Thời gian: ...`;
+
+      document.getElementById("results").innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Đang tìm kiếm...</p>
+        </div>
+      `;
+
+      try {
+        const response = await fetch("/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: q, topk: topk, mode: mode, sort: sort }),
+          signal: currentAbort.signal
         });
-    </script>
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
+        }
+
+        const data = await response.json();
+
+        const count = (data.results && Array.isArray(data.results)) ? data.results.length : 0;
+        const serverMs = (data.took_ms !== undefined && data.took_ms !== null) ? Number(data.took_ms) : null;
+
+        document.getElementById("resultsSub").textContent =
+          `Mode: ${mode} • Sort: ${sort} • TopK: ${topk} • ${count} kết quả` +
+          (serverMs !== null ? ` • Thời gian: ${serverMs} ms` : "");
+
+        let html = "";
+        if (data.error) {
+          html = `
+            <div class="error-state">
+              <i class="fas fa-exclamation-triangle"></i>
+              <p><strong>Lỗi:</strong> ${escapeHtml(data.error)}</p>
+              <p>${escapeHtml(data.details || "")}</p>
+            </div>
+          `;
+        } else if (data.results && data.results.length > 0) {
+          data.results.forEach(r => {
+            const title = escapeHtml(r.title);
+            const source = escapeHtml(r.source);
+            const category = escapeHtml(r.category);
+            const summary = escapeHtml(r.summary);
+            const dateText = escapeHtml(r.published || "");
+            const linkRaw = r.link || "";
+            const link = isHttpUrl(linkRaw) ? linkRaw : "";
+            const scoreLabel = (mode === "keyword") ? "Điểm" : "Độ tương đồng";
+
+            html += `
+              <div class="card">
+                <h2>${title}</h2>
+                <div class="meta-info">
+                  <span><i class="fas fa-newspaper"></i> ${source || "(không rõ nguồn)"}</span>
+                  <span><i class="fas fa-tag"></i> ${category || "(không rõ)"}</span>
+                  ${dateText ? `<span><i class="fas fa-calendar"></i> ${dateText}</span>` : ""}
+                  ${link ? `<span><i class="fas fa-link"></i> <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">Mở bài gốc</a></span>` : ""}
+                </div>
+                <p>${summary}</p>
+                <span class="badge">${scoreLabel}: ${Number(r.score).toFixed(4)}</span>
+              </div>
+            `;
+          });
+        } else {
+          html = `
+            <div class="empty-state">
+              <i class="fas fa-search"></i>
+              <p>Không tìm thấy kết quả nào cho "${escapeHtml(q)}"</p>
+              <p>Hãy thử từ khoá khác hoặc đổi mode (Hybrid/Semantic/Keyword)</p>
+            </div>
+          `;
+        }
+
+        document.getElementById("results").innerHTML = html;
+
+      } catch (error) {
+        if (error.name === "AbortError") return;
+
+        document.getElementById("resultsSub").textContent =
+          `Mode: ${mode} • Sort: ${sort} • TopK: ${topk} • Thời gian: -`;
+
+        document.getElementById("results").innerHTML = `
+          <div class="error-state">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p><strong>Lỗi kết nối:</strong> ${escapeHtml(error.message)}</p>
+            <p>Vui lòng thử lại sau hoặc kiểm tra kết nối mạng</p>
+          </div>
+        `;
+        console.error("Search error:", error);
+      }
+    }
+
+    // Enter để search
+    document.getElementById("query").addEventListener("keypress", function (event) {
+      if (event.key === "Enter") doSearch();
+    });
+
+    // Render history khi load trang
+    renderHistory();
+  </script>
 </body>
 </html>
