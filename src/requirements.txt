@@ -6,7 +6,7 @@ huggingface_hub>=0.24.0
 sentence-transformers>=3.0.0
 
 # Vector index
-chroma-hnswlib==0.7.6
+hnswlib==0.7
 
 # Web
 fastapi>=0.115.2,<1.0
