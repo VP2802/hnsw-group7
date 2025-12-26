@@ -115,3 +115,6 @@ http://localhost:8000/
 
 * Nếu cập nhật danh sách bài báo, cần chạy lại bước embed và build chỉ mục.
 * Cần dùng phiên bản Python tương thích với thư viện trong `requirements.txt`.
+#  **Live Demo:** [https://vp2802.github.io/hnsw-group7/](https://vp2802.github.io/hnsw-group7/)
+
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live-success?style=for-the-badge&logo=github)](https://vp2802.github.io/hnsw-group7/)
