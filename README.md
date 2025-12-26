@@ -15,6 +15,8 @@ project/
 ├── hnsw_manager.py
 ├── graph.py
 ├── server.py
+├── merge_article_index.py
+├── update_data_summary.py
 ├── requirements.txt
 └── README.md
 ```
