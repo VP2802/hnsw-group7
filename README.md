@@ -1,130 +1,189 @@
-# Hệ thống Tìm kiếm Bài báo bằng HNSW
+HỆ THỐNG TÌM KIẾM BÀI BÁO SỬ DỤNG HNSW
 
-Dự án này triển khai một công cụ tìm kiếm bài báo sử dụng HNSW (Hierarchical Navigable Small World) để thực hiện truy vấn tương đồng nhanh. Hệ thống bao gồm các thành phần để crawl (thu thập) bài báo, sinh embedding văn bản, xây dựng chỉ mục HNSW và cung cấp giao diện web để tìm kiếm.
+(Hierarchical Navigable Small World Graph)
 
-## Cấu trúc thư mục
+1. Giới thiệu
 
-```
+Trong bối cảnh số lượng bài báo và tin tức trực tuyến ngày càng gia tăng, nhu cầu tìm kiếm thông tin nhanh và chính xác trở nên vô cùng quan trọng. Tuy nhiên, các phương pháp tìm kiếm tuyến tính trên không gian vector có chi phí tính toán lớn khi dữ liệu tăng mạnh.
+
+Dự án này xây dựng hệ thống tìm kiếm bài báo dựa trên HNSW (Hierarchical Navigable Small World) – một cấu trúc đồ thị hiệu quả cho Approximate Nearest Neighbor Search (ANNS). Hệ thống cho phép truy vấn các bài báo tương đồng ngữ nghĩa với tốc độ cao, độ chính xác tốt và khả năng mở rộng lớn.
+
+2. Mục tiêu của dự án
+
+Thu thập (crawl) dữ liệu bài báo từ các nguồn tin tức trực tuyến
+
+Biểu diễn nội dung bài báo dưới dạng vector embedding
+
+Xây dựng HNSW index cho tìm kiếm tương đồng ngữ nghĩa
+
+Triển khai backend Python phục vụ truy vấn
+
+Xây dựng giao diện web cho người dùng cuối
+
+Đánh giá khả năng ứng dụng HNSW trong hệ thống tìm kiếm văn bản
+
+3. Công nghệ sử dụng
+3.1. Ngôn ngữ & Framework
+
+Python 3
+
+FastAPI – xây dựng RESTful API
+
+Uvicorn – ASGI server
+
+3.2. Thư viện chính
+
+sentence-transformers – sinh embedding văn bản
+
+hnswlib – xây dựng chỉ mục HNSW
+
+feedparser, requests – crawl dữ liệu
+
+numpy – xử lý vector
+
+starlette, anyio – backend hỗ trợ
+
+4. Kiến trúc hệ thống
+Luồng xử lý tổng quát:
+
+Crawl bài báo
+
+Tiền xử lý & lưu metadata
+
+Sinh embedding cho từng bài
+
+Xây dựng chỉ mục HNSW
+
+Nhận truy vấn người dùng
+
+Sinh embedding truy vấn
+
+Tìm kiếm ANN bằng HNSW
+
+Trả về danh sách bài báo liên quan
+
+5. Cấu trúc thư mục
 project/
+├── src/
+│   ├── article_embedder.py
+│   ├── article_search_system.py
+│   ├── crawl_articles.py
+│   ├── hnsw_manager.py
+│   ├── graph.py
+│   ├── merge_article_index.py
+│   ├── update_summary_data.py
+│   └── server.py
 ├── templates/
 │   └── index.html
-|   └── sript.js
-├── article_embedder.py
-├── article_search_system.py
-├── crawl_articles.py
-├── hnsw_manager.py
-├── graph.py
-├── server.py
-├── merge_article_index.py
-├── update_data_summary.py
-└── README.md
-```
+├── visualization.py
+├── README.md
+└── .gitignore
 
-## Chức năng chính
+6. Mô tả các thành phần chính
+🔹 crawl_articles.py
 
-* Crawl tin tức từ các nguồn báo online, lưu vào thư mục dữ liệu.
-* Sinh embedding cho từng bài báo bằng mô hình câu.
-* Xây dựng chỉ mục HNSW cho tìm kiếm xấp xỉ theo độ tương đồng.
-* Cung cấp giao diện web để người dùng nhập truy vấn tìm bài báo.
-* Backend viết bằng Python.
+Thu thập bài báo từ các nguồn RSS / website và lưu nội dung vào bộ nhớ cục bộ.
 
-## Cài đặt
+🔹 article_embedder.py
 
-1. Cài các thư viện cần thiết:
+Sử dụng mô hình Sentence Transformer để chuyển văn bản thành vector embedding.
 
-```
-!pip install feedparser==6.0.10
-!pip install requests==2.32.4
-!pip install huggingface_hub>=0.24.0
-!pip install sentence-transformers>=3.0.0
-!pip install hnswlib==0.7
-!pip install "fastapi>=0.115.2,<1.0"
-!pip install "starlette>=0.49.1,<1.0"
-!pip install "anyio>=4.9.0,<5.0"
-!pip install "uvicorn>=0.34.0,<1.0"
-!pip install python-multipart>=0.0.18
-```
+🔹 hnsw_manager.py
 
-2. Đảm bảo cấu trúc thư mục giống như ở trên.
+Khởi tạo và xây dựng HNSW graph
 
-## Xây dựng dữ liệu
+Lưu / load chỉ mục từ ổ đĩa
 
-Nếu chưa có thư mục `article.data` và `article.index`, bạn cần chạy quá trình crawl và build chỉ mục.
+Quản lý quá trình thêm vector
 
-### Bước 1: Crawl bài báo
+🔹 article_search_system.py
 
-Crawl các bài báo từ nguồn đã định sẵn và lưu dữ liệu vào ổ đĩa.
+Thực hiện truy vấn tìm kiếm dựa trên embedding và HNSW index.
 
-```
+🔹 server.py
+
+Backend FastAPI:
+
+Nhận truy vấn từ frontend
+
+Gọi hệ thống tìm kiếm
+
+Trả kết quả về client
+
+🔹 templates/index.html
+
+Giao diện web cho người dùng tìm kiếm bài báo.
+
+7. Hướng dẫn cài đặt
+7.1. Cài đặt thư viện
+pip install feedparser==6.0.10
+pip install requests==2.32.4
+pip install huggingface_hub>=0.24.0
+pip install sentence-transformers>=3.0.0
+pip install hnswlib==0.7
+pip install "fastapi>=0.115.2,<1.0"
+pip install "starlette>=0.49.1,<1.0"
+pip install "anyio>=4.9.0,<5.0"
+pip install "uvicorn>=0.34.0,<1.0"
+pip install python-multipart>=0.0.18
+
+8. Xây dựng dữ liệu & chỉ mục
+Bước 1: Crawl bài báo
 python crawl_articles.py
-```
+
 
 Kết quả:
 
-* Thư mục `article.data/` chứa nội dung bài báo.
-* File metadata phục vụ cho bước embed.
+article.data/ – nội dung bài báo
 
-### Bước 2: Sinh embedding và build HNSW
+File metadata
 
-Chạy script build chỉ mục HNSW:
-
-```
+Bước 2: Sinh embedding & build HNSW
 python hnsw_manager.py
-```
+
 
 Kết quả:
 
-* Thư mục `article.index/` chứa chỉ mục HNSW.
-* File `embeddings.npy` chứa vector embedding của các bài báo.
+article.index/ – HNSW index
 
-## Chạy web server
+embeddings.npy – vector embedding
 
-Chạy server:
-
-```
+9. Chạy hệ thống
+Chạy backend
 python server.py
-```
 
-Sau đó mở trình duyệt và truy cập:
 
-```
-http://localhost:8000/
-```
+Truy cập:
 
-## Cách sử dụng
+http://localhost:8000
 
-1. Nhập truy vấn tìm kiếm vào ô tìm kiếm.
-2. Hệ thống sẽ sinh embedding cho truy vấn.
-3. Chỉ mục HNSW được dùng để tìm các bài tương tự nhất.
-4. Trả về danh sách bài báo liên quan.
+10. Demo & triển khai
+🔴 Live Demo (GitHub Pages)
 
-## Mô tả file
+👉 https://vp2802.github.io/hnsw-group7/
 
-* **crawl_articles.py**
-  Crawl bài báo và lưu dữ liệu.
+🟢 Google Colab (đã chạy sẵn)
 
-* **article_embedder.py**
-  Sinh embedding từ văn bản.
+👉 https://colab.research.google.com/drive/1iWQEyGi5aBXxDRD09-qgvT7lF-CNjnDB?usp=sharing
 
-* **article_search_system.py**
-  Xử lý tìm kiếm bài báo bằng HNSW.
+(Colab cho phép chạy thử toàn bộ pipeline mà không cần cài đặt môi trường cục bộ)
 
-* **hnsw_manager.py**
-  Xây dựng và quản lý HNSW index.
+11. Đánh giá & nhận xét
 
-* **server.py**
-  Chạy web server backend.
+HNSW cho tốc độ truy vấn rất nhanh so với tìm kiếm tuyến tính
 
-* **script.js**
-  Gửi truy vấn từ frontend và nhận kết quả.
+Độ chính xác cao với dữ liệu văn bản lớn
 
-* **templates/index.html**
-  Giao diện web phía người dùng.
+Phù hợp cho các hệ thống tìm kiếm, recommendation, semantic search
 
-## Ghi chú
+Có thể mở rộng thêm:
 
-* Nếu cập nhật danh sách bài báo, cần chạy lại bước embed và build chỉ mục.
-* Cần dùng phiên bản Python tương thích với thư viện trong `requirements.txt`.
-#  **Live Demo:** [https://vp2802.github.io/hnsw-group7/](https://vp2802.github.io/hnsw-group7/)
+Cập nhật index động
 
-[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live-success?style=for-the-badge&logo=github)](https://vp2802.github.io/hnsw-group7/)
+Đánh giá Recall / Latency
+
+So sánh với FAISS, IVF, Flat index
+
+12. Kết luận
+
+Dự án đã triển khai thành công một hệ thống tìm kiếm bài báo dựa trên HNSW, kết hợp embedding ngữ nghĩa và đồ thị ANN. Kết quả cho thấy HNSW là giải pháp hiệu quả cho bài toán tìm kiếm tương đồng trên không gian vector lớn, có tiềm năng ứng dụng thực tế cao.
