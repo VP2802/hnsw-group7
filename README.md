@@ -1,121 +1,90 @@
-HỆ THỐNG TÌM KIẾM BÀI BÁO SỬ DỤNG HNSW
+🔍 HỆ THỐNG TÌM KIẾM BÀI BÁO SỬ DỤNG HNSW
 
 (Hierarchical Navigable Small World Graph)
 
 1. Giới thiệu
 
-Trong bối cảnh số lượng bài báo và tin tức trực tuyến ngày càng gia tăng, nhu cầu tìm kiếm thông tin nhanh và chính xác trở nên vô cùng quan trọng. Tuy nhiên, các phương pháp tìm kiếm tuyến tính trên không gian vector có chi phí tính toán lớn khi dữ liệu tăng mạnh.
+Trong bối cảnh số lượng bài báo trực tuyến ngày càng tăng nhanh, việc tìm kiếm thông tin liên quan một cách hiệu quả là một bài toán quan trọng. Dự án này triển khai một hệ thống tìm kiếm bài báo dựa trên độ tương đồng ngữ nghĩa, sử dụng mô hình embedding văn bản kết hợp với HNSW (Hierarchical Navigable Small World) để thực hiện truy vấn gần đúng (Approximate Nearest Neighbor – ANN) với tốc độ cao.
 
-Dự án này xây dựng hệ thống tìm kiếm bài báo dựa trên HNSW (Hierarchical Navigable Small World) – một cấu trúc đồ thị hiệu quả cho Approximate Nearest Neighbor Search (ANNS). Hệ thống cho phép truy vấn các bài báo tương đồng ngữ nghĩa với tốc độ cao, độ chính xác tốt và khả năng mở rộng lớn.
+Hệ thống cho phép:
 
-2. Mục tiêu của dự án
-
-Thu thập (crawl) dữ liệu bài báo từ các nguồn tin tức trực tuyến
+Thu thập (crawl) dữ liệu bài báo từ các nguồn tin tức
 
 Biểu diễn nội dung bài báo dưới dạng vector embedding
 
-Xây dựng HNSW index cho tìm kiếm tương đồng ngữ nghĩa
+Xây dựng chỉ mục HNSW để tìm kiếm nhanh
 
-Triển khai backend Python phục vụ truy vấn
+Cung cấp giao diện web cho người dùng truy vấn
 
-Xây dựng giao diện web cho người dùng cuối
+2. Kiến trúc tổng thể hệ thống
 
-Đánh giá khả năng ứng dụng HNSW trong hệ thống tìm kiếm văn bản
+Hệ thống gồm 4 thành phần chính:
 
-3. Công nghệ sử dụng
-3.1. Ngôn ngữ & Framework
+Thu thập dữ liệu (Crawler)
+Crawl các bài báo từ nguồn online và lưu trữ nội dung cùng metadata.
+
+Sinh embedding văn bản
+Sử dụng mô hình Sentence Transformer để ánh xạ bài báo sang không gian vector.
+
+Xây dựng & quản lý chỉ mục HNSW
+Áp dụng thuật toán HNSW để lưu trữ và truy vấn vector embedding hiệu quả.
+
+Web Application
+Backend viết bằng Python (FastAPI), frontend HTML/JS cho phép người dùng tìm kiếm bài báo theo truy vấn tự nhiên.
+
+3. Cấu trúc thư mục
+project/
+├── templates/
+│   └── index.html
+│   └── script.js
+├── article_embedder.py
+├── article_search_system.py
+├── crawl_articles.py
+├── hnsw_manager.py
+├── graph.py
+├── server.py
+├── merge_article_index.py
+├── update_summary_data.py
+└── README.md
+
+Mô tả ngắn gọn các file
+
+crawl_articles.py: Thu thập và lưu trữ dữ liệu bài báo
+
+article_embedder.py: Sinh embedding cho văn bản
+
+hnsw_manager.py: Xây dựng và quản lý chỉ mục HNSW
+
+article_search_system.py: Thực hiện truy vấn tìm kiếm
+
+server.py: Backend FastAPI
+
+graph.py: Mô phỏng cấu trúc đồ thị HNSW
+
+merge_article_index.py: Gộp và cập nhật chỉ mục
+
+update_summary_data.py: Cập nhật metadata và thống kê
+
+templates/index.html: Giao diện web
+
+4. Công nghệ sử dụng
 
 Python 3
 
-FastAPI – xây dựng RESTful API
+Sentence-Transformers
 
-Uvicorn – ASGI server
+HNSWlib
 
-3.2. Thư viện chính
+FastAPI
 
-sentence-transformers – sinh embedding văn bản
+Uvicorn
 
-hnswlib – xây dựng chỉ mục HNSW
+HTML / JavaScript
 
-feedparser, requests – crawl dữ liệu
+5. Cài đặt môi trường
 
-numpy – xử lý vector
+Cài đặt các thư viện cần thiết:
 
-starlette, anyio – backend hỗ trợ
-
-4. Kiến trúc hệ thống
-Luồng xử lý tổng quát:
-
-Crawl bài báo
-
-Tiền xử lý & lưu metadata
-
-Sinh embedding cho từng bài
-
-Xây dựng chỉ mục HNSW
-
-Nhận truy vấn người dùng
-
-Sinh embedding truy vấn
-
-Tìm kiếm ANN bằng HNSW
-
-Trả về danh sách bài báo liên quan
-
-5. Cấu trúc thư mục
-project/
-├── src/
-│   ├── article_embedder.py
-│   ├── article_search_system.py
-│   ├── crawl_articles.py
-│   ├── hnsw_manager.py
-│   ├── graph.py
-│   ├── merge_article_index.py
-│   ├── update_summary_data.py
-│   └── server.py
-├── templates/
-│   └── index.html
-├── visualization.py
-├── README.md
-└── .gitignore
-
-6. Mô tả các thành phần chính
-🔹 crawl_articles.py
-
-Thu thập bài báo từ các nguồn RSS / website và lưu nội dung vào bộ nhớ cục bộ.
-
-🔹 article_embedder.py
-
-Sử dụng mô hình Sentence Transformer để chuyển văn bản thành vector embedding.
-
-🔹 hnsw_manager.py
-
-Khởi tạo và xây dựng HNSW graph
-
-Lưu / load chỉ mục từ ổ đĩa
-
-Quản lý quá trình thêm vector
-
-🔹 article_search_system.py
-
-Thực hiện truy vấn tìm kiếm dựa trên embedding và HNSW index.
-
-🔹 server.py
-
-Backend FastAPI:
-
-Nhận truy vấn từ frontend
-
-Gọi hệ thống tìm kiếm
-
-Trả kết quả về client
-
-🔹 templates/index.html
-
-Giao diện web cho người dùng tìm kiếm bài báo.
-
-7. Hướng dẫn cài đặt
-7.1. Cài đặt thư viện
 pip install feedparser==6.0.10
 pip install requests==2.32.4
 pip install huggingface_hub>=0.24.0
@@ -127,63 +96,64 @@ pip install "anyio>=4.9.0,<5.0"
 pip install "uvicorn>=0.34.0,<1.0"
 pip install python-multipart>=0.0.18
 
-8. Xây dựng dữ liệu & chỉ mục
+6. Xây dựng dữ liệu và chỉ mục
 Bước 1: Crawl bài báo
 python crawl_articles.py
 
 
 Kết quả:
 
-article.data/ – nội dung bài báo
+Thư mục article.data/: chứa nội dung bài báo
 
-File metadata
+File metadata phục vụ embedding
 
-Bước 2: Sinh embedding & build HNSW
+Bước 2: Sinh embedding & xây dựng HNSW
 python hnsw_manager.py
 
 
 Kết quả:
 
-article.index/ – HNSW index
+Thư mục article.index/: chỉ mục HNSW
 
-embeddings.npy – vector embedding
+File embeddings.npy: vector embedding
 
-9. Chạy hệ thống
-Chạy backend
+7. Chạy hệ thống web
 python server.py
 
 
-Truy cập:
+Truy cập trên trình duyệt:
 
-http://localhost:8000
+http://localhost:8000/
 
-10. Demo & triển khai
-🔴 Live Demo (GitHub Pages)
+8. Hướng dẫn sử dụng
+
+Người dùng nhập truy vấn tìm kiếm
+
+Hệ thống sinh embedding cho truy vấn
+
+Chỉ mục HNSW tìm các vector gần nhất
+
+Trả về danh sách bài báo liên quan theo độ tương đồng
+
+9. Demo & Tài nguyên
+🌐 Live Demo (GitHub Pages)
 
 👉 https://vp2802.github.io/hnsw-group7/
 
-🟢 Google Colab (đã chạy sẵn)
+📘 Google Colab (chạy sẵn)
 
 👉 https://colab.research.google.com/drive/1iWQEyGi5aBXxDRD09-qgvT7lF-CNjnDB?usp=sharing
 
-(Colab cho phép chạy thử toàn bộ pipeline mà không cần cài đặt môi trường cục bộ)
+Notebook Colab đã được cấu hình sẵn, có thể chạy trực tiếp không cần cài môi trường.
 
-11. Đánh giá & nhận xét
+10. Ghi chú
 
-HNSW cho tốc độ truy vấn rất nhanh so với tìm kiếm tuyến tính
+Khi cập nhật dữ liệu bài báo, cần rebuild embedding và HNSW index
 
-Độ chính xác cao với dữ liệu văn bản lớn
+HNSW cho phép đánh đổi chính xác – tốc độ thông qua các tham số (M, ef)
 
-Phù hợp cho các hệ thống tìm kiếm, recommendation, semantic search
+Phù hợp cho hệ thống tìm kiếm quy mô lớn
 
-Có thể mở rộng thêm:
+11. Kết luận
 
-Cập nhật index động
-
-Đánh giá Recall / Latency
-
-So sánh với FAISS, IVF, Flat index
-
-12. Kết luận
-
-Dự án đã triển khai thành công một hệ thống tìm kiếm bài báo dựa trên HNSW, kết hợp embedding ngữ nghĩa và đồ thị ANN. Kết quả cho thấy HNSW là giải pháp hiệu quả cho bài toán tìm kiếm tương đồng trên không gian vector lớn, có tiềm năng ứng dụng thực tế cao.
+Dự án đã chứng minh hiệu quả của HNSW trong bài toán tìm kiếm ngữ nghĩa với dữ liệu văn bản. Giải pháp có khả năng mở rộng tốt, tốc độ truy vấn nhanh và dễ tích hợp vào các hệ thống tìm kiếm thực tế.
