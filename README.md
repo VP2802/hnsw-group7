@@ -1,84 +1,214 @@
-HNSW-GROUP7/
-├── 📁 src/                    # Source code chính
-│   ├── crawl_articles.py          # Thu thập bài báo
-│   ├── article_embedder.py        # Tạo embedding
-│   ├── hnsw_manager.py            # Quản lý HNSW index
-│   ├── article_search_system.py   # Hệ thống tìm kiếm
-│   ├── server.py                  # FastAPI backend
-│   ├── merge_article_index.py     # Gộp chỉ mục
-│   ├── update_summary_data.py     # Cập nhật thống kê
-│   └── graph.py                   # Visualize đồ thị của data
-│
-├── 📁 templates/                 # Frontend HTML
-│   └── index.html                # Giao diện web
-│
-├── 📄 index.html                 # Trang chủ chính (redirect)
-├── 📄 visualization.py           # Visualize HNSW graph
-├── 📄 requirements.txt           # Dependencies
-├── 📄 .gitignore
-└── 📄 README.md
+🔍 Hệ thống Tìm kiếm Bài báo bằng HNSW
 
-Mô tả chi tiết:
-📁 src/ - Core source code
-crawl_articles.py: Crawl RSS feeds (30+ nguồn, 8,661 bài báo)
+Dự án này triển khai một công cụ tìm kiếm bài báo theo ngữ nghĩa sử dụng HNSW (Hierarchical Navigable Small World) để thực hiện truy vấn tương đồng nhanh và hiệu quả.
 
-article_embedder.py: Tạo embedding bằng Vietnamese-SBERT (768D)
+Hệ thống bao gồm các thành phần:
 
-hnsw_manager.py: Xây dựng và query HNSW index
+Crawl (thu thập) bài báo từ nhiều nguồn RSS
 
-article_search_system.py: Search engine với 3 chế độ (semantic/keyword/hybrid)
+Sinh embedding văn bản bằng mô hình ngôn ngữ
 
-server.py: FastAPI backend (port 8000)
+Xây dựng chỉ mục HNSW cho tìm kiếm xấp xỉ
 
-merge_article_index.py: Merge multiple indices
+Cung cấp giao diện web hỗ trợ nhiều chế độ tìm kiếm
 
-update_summary_data.py: Update metadata và thống kê
+📁 Cấu trúc thư mục
+project/
+├── src/
+│   ├── crawl_articles.py
+│   ├── article_embedder.py
+│   ├── hnsw_manager.py
+│   ├── article_search_system.py
+│   ├── server.py
+│   ├── merge_article_index.py
+│   ├── update_summary_data.py
+│   └── graph.py
+├── templates/
+│   └── index.html
+├── article_index/
+│   ├── article_index.bin
+│   ├── embeddings.npy
+│   ├── metadata.json
+│   └── benchmark_results.json
+├── article_data/
+│   ├── articles.json
+│   └── summary.txt
+├── index.html
+├── visualization.py
+├── requirements.txt
+└── README.md
 
-graph.py: Visualize Đồ thị biểu diễn data đã crawl
+🚀 Chức năng chính
 
-📁 templates/ - Frontend
-index.html: Single-page web app với tìm kiếm
+Crawl tin tức
+Thu thập bài báo từ 30+ nguồn báo online, hỗ trợ đa ngôn ngữ
 
-📁 article_index/ - Index files
-article_index.bin: Binary HNSW index
+Tiếng Việt: 79.5%
 
-embeddings.npy: Vector embeddings
+Tiếng Anh: 20.5%
 
-metadata.json: Article metadata
+Sinh embedding
+Sử dụng Vietnamese-SBERT (768 chiều) để biểu diễn ngữ nghĩa bài báo
 
-benchmark_results.json: Performance data
+Chỉ mục HNSW
+Xây dựng chỉ mục HNSW cho bài toán Approximate Nearest Neighbor Search
 
-📁 article_data/ - Raw data
-articles.json: All crawled articles
+Giao diện web
+Hỗ trợ 3 chế độ tìm kiếm:
 
-summary.txt: Dataset statistics
+Semantic Search (ngữ nghĩa)
 
-📄 Root files
-index.html: Main landing page
+Keyword Search (từ khóa)
 
-visualization.py: Visualize HNSW structure
+Hybrid Search (kết hợp)
 
-requirements.txt: Python dependencies
+Backend
+FastAPI (Python) với thời gian phản hồi trung bình ~135ms
 
-README.md: Project documentation
+⭐ Kết quả nổi bật
 
-Quy trình chạy:
-bash
-# 1. Cài dependencies
-pip install -r requirements.txt
+8,661 bài báo từ 30+ nguồn RSS
 
-# 2. Crawl dữ liệu
+20 chủ đề đa dạng: Thế giới, Thể thao, Công nghệ, Giáo dục, …
+
+Hiệu năng vượt trội:
+
+HNSW nhanh hơn 56× so với Brute Force
+
+Thời gian tìm kiếm chỉ tăng 17.9% khi dữ liệu tăng 5 lần
+
+Độ chính xác cao:
+
+3 truy vấn đạt 100% similarity
+
+7/10 truy vấn có similarity > 0.85
+
+⚙️ Cài đặt
+1. Cài đặt thư viện
+pip install feedparser==6.0.10 requests==2.32.4
+pip install huggingface_hub>=0.24.0 sentence-transformers>=3.0.0
+pip install hnswlib==0.7
+pip install fastapi==0.115.2 uvicorn==0.34.0
+pip install python-multipart
+
+
+Yêu cầu: Python 3.8+
+
+2. Đảm bảo cấu trúc thư mục
+
+Cấu trúc thư mục cần giống như mục Cấu trúc thư mục ở trên.
+
+🏗️ Xây dựng dữ liệu
+
+Nếu chưa có article_data/ và article_index/, cần thực hiện các bước sau.
+
+Bước 1: Crawl bài báo
 python src/crawl_articles.py
 
-# 3. Build HNSW index
+
+Kết quả:
+
+Thư mục article_data/ chứa nội dung bài báo
+
+File metadata phục vụ bước embedding
+
+Bước 2: Sinh embedding & build HNSW
 python src/hnsw_manager.py
 
-# 4. Chạy server
+
+Kết quả:
+
+Thư mục article_index/ chứa chỉ mục HNSW
+
+File embeddings.npy chứa vector embedding
+
+🌐 Chạy Web Server
 python src/server.py
 
-# 5. Truy cập web
-# http://localhost:8000
-Demo:
-Live Demo: https://vp2802.github.io/hnsw-group7/
 
-Colab: [https://colab.research.google.com/drive/1iWQEyGi5aBXxDRD09-qgvT7lF-CNjnDB](https://l.facebook.com/l.php?u=https%3A%2F%2Fcolab.research.google.com%2Fdrive%2F1iWQEyGi5aBXxDRD09-qgvT7lF-CNjnDB%3Fusp%3Dsharing%26fbclid%3DIwZXh0bgNhZW0CMTAAYnJpZBExb2d4NlprVGY0bFlXM1pIanNydGMGYXBwX2lkEDIyMjAzOTE3ODgyMDA4OTIAAR5hCqw5G8QsAbLqop9shEsidhxlttNVSxy5WAlGG91isPYU5_rCoyPw7LRfXg_aem_6kbgyS0K9tb_aujNYIvBRQ&h=AT2l7o3dErmF_vDnALnVQ4JcWzVvYseKj07JoUDR4jZpuBHHq9P2gt7FIDIPDdoB1mINVb00IH3oBIUSXLFwWqCeaUTubxyfLkvwgyDoai_LkI_uM18QArTd9eBksZXsRHPW3RH8bzhIYL52Ax28jQ)
+Mở trình duyệt và truy cập:
+
+http://localhost:8000
+
+🧑‍💻 Cách sử dụng
+
+Nhập truy vấn tìm kiếm vào ô tìm kiếm
+
+Chọn chế độ:
+
+Semantic: tìm kiếm theo ngữ nghĩa
+
+Keyword: tìm kiếm theo từ khóa
+
+Hybrid: kết hợp cả hai
+
+Chọn số lượng kết quả (TopK) và cách sắp xếp
+
+Hệ thống sinh embedding cho truy vấn và tìm các bài báo tương tự
+
+Trả về danh sách bài báo kèm độ tương đồng
+
+📄 Mô tả các file chính
+
+src/crawl_articles.py
+Crawl bài báo từ RSS feeds và lưu dữ liệu
+
+src/article_embedder.py
+Sinh embedding văn bản bằng Vietnamese-SBERT
+
+src/article_search_system.py
+Tìm kiếm bài báo với 3 chế độ: Semantic / Keyword / Hybrid
+
+src/hnsw_manager.py
+Xây dựng và quản lý chỉ mục HNSW
+
+src/server.py
+Backend FastAPI
+
+src/merge_article_index.py
+Gộp và cập nhật chỉ mục
+
+src/update_summary_data.py
+Cập nhật metadata và thống kê dữ liệu
+
+src/graph.py
+Trực quan hóa cấu trúc đồ thị HNSW
+
+visualization.py
+Phân tích kết quả và hiển thị biểu đồ
+
+templates/index.html
+Giao diện web phía người dùng
+
+📊 Dataset thống kê
+
+Tổng số bài báo: 8,661
+
+Tiếng Việt: 6,884 bài (79.5%)
+
+Tiếng Anh: 1,777 bài (20.5%)
+
+Nguồn báo: 30+ nguồn uy tín
+
+Chủ đề: 20 chủ đề đa dạng
+
+⚡ Hiệu suất hệ thống
+
+Thời gian tìm kiếm: ~135 ms
+
+Recall: > 97.5%
+
+Cải thiện tốc độ: nhanh hơn 56× so với Brute Force
+
+🔗 Live Demo
+🌐 GitHub Pages
+
+🖥️ Google Colab (chạy sẵn)
+
+📝 Ghi chú
+
+Khi cập nhật danh sách bài báo, cần build lại embedding và HNSW index
+
+Hệ thống hỗ trợ tìm kiếm đa ngôn ngữ, đa chủ đề
+
+Có thể mở rộng cho các hệ thống tìm kiếm quy mô lớn
